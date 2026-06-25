@@ -8,6 +8,8 @@
   ],
   "scripts": {
     "start": "bun run app.ts",
+    "gui": "bun run --filter @graphland/zk-gui dev",
+    "gui:build": "bun run --filter @graphland/zk-gui build:app",
     "typecheck": "bun run --filter @graphland/zk-client typecheck",
     "test": "bun run --filter @graphland/zk-client test"
   },

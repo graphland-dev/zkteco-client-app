@@ -1,0 +1,416 @@
+:root {
+  color-scheme: light;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #102033;
+  background:
+    radial-gradient(circle at top left, rgba(47, 111, 237, 0.12), transparent 28%),
+    linear-gradient(180deg, #f5f8fc 0%, #edf2f8 100%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.app-shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4d6b8a;
+}
+
+h1,
+h2 {
+  margin: 0;
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.15rem;
+}
+
+.subtitle,
+.panel-header p {
+  margin: 8px 0 0;
+  color: #5d738c;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.device-info-panel {
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #e5f7ed 0%, #eef4ff 100%);
+  border: 1px solid rgba(15, 106, 53, 0.15);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 12px 32px rgba(16, 32, 51, 0.06);
+}
+
+.device-info-panel code {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.88em;
+}
+
+.device-info-grid,
+.device-info-inline {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.device-info-grid div,
+.device-info-inline div {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.device-info-grid dt,
+.device-info-inline dt {
+  margin: 0 0 6px;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  color: #47607a;
+}
+
+.device-info-grid dd,
+.device-info-inline dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-family: "IBM Plex Mono", monospace;
+  color: #102033;
+}
+
+.device-info-inline {
+  margin-top: 10px;
+}
+
+.device-info-inline dd {
+  font-size: 1rem;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(16, 32, 51, 0.08);
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 18px 40px rgba(16, 32, 51, 0.06);
+  backdrop-filter: blur(10px);
+}
+
+.panel-header {
+  margin-bottom: 18px;
+}
+
+.config-form,
+.status-card,
+.test-result {
+  display: grid;
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+}
+
+label span {
+  font-size: 0.92rem;
+  color: #47607a;
+}
+
+.field-hint {
+  margin: -4px 0 0;
+  font-size: 0.85rem;
+  color: #68839f;
+}
+
+input {
+  width: 100%;
+  border: 1px solid #c8d5e4;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff;
+  color: inherit;
+}
+
+input:focus {
+  outline: 2px solid rgba(47, 111, 237, 0.25);
+  border-color: #2f6fed;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: transform 120ms ease, opacity 120ms ease;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button:not(:disabled):active {
+  transform: translateY(1px);
+}
+
+.primary {
+  background: #2f6fed;
+  color: #fff;
+}
+
+.secondary {
+  background: #e8eef7;
+  color: #17324d;
+}
+
+.danger {
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  white-space: nowrap;
+}
+
+.status-pill.idle {
+  background: #edf2f8;
+  color: #47607a;
+}
+
+.status-pill.connected {
+  background: #e5f7ed;
+  color: #0f6a35;
+}
+
+.status-pill.error {
+  background: #fdecec;
+  color: #9b1c1c;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.status-card div {
+  padding: 12px;
+  border-radius: 12px;
+  background: #f7f9fc;
+}
+
+.status-card dt {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #68839f;
+}
+
+.status-card dd {
+  margin: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.95rem;
+}
+
+.error-text,
+.success-text {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+}
+
+.error-text {
+  background: #fdecec;
+  color: #9b1c1c;
+}
+
+.success-text {
+  background: #e5f7ed;
+  color: #0f6a35;
+}
+
+.sync-progress {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #eef4ff;
+  color: #17324d;
+}
+
+.sync-progress span {
+  font-size: 0.9rem;
+  color: #47607a;
+}
+
+.test-result {
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.test-result.ok {
+  background: #e5f7ed;
+  color: #0f6a35;
+}
+
+.test-result.fail {
+  background: #fdecec;
+  color: #9b1c1c;
+}
+
+.webhook-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f7f9fc;
+}
+
+.webhook-url {
+  margin: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.82rem;
+  color: #47607a;
+  word-break: break-all;
+}
+
+.pass-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.pass-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+}
+
+.pass-list li.ok {
+  background: #e5f7ed;
+}
+
+.pass-list li.fail {
+  background: #fdecec;
+}
+
+.pass-user {
+  font-family: "IBM Plex Mono", monospace;
+  font-weight: 500;
+}
+
+.pass-time {
+  color: #47607a;
+}
+
+.pass-state {
+  font-weight: 500;
+}
+
+.loading-card {
+  min-height: 70vh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  color: #47607a;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #d7e2ef;
+  border-top-color: #2f6fed;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .app-header {
+    flex-direction: column;
+  }
+
+  .field-grid,
+  .status-card dl,
+  .device-info-grid,
+  .device-info-inline {
+    grid-template-columns: 1fr;
+  }
+}

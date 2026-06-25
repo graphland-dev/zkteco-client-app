@@ -7,6 +7,7 @@ import {
   decodeDeviceTime,
   decodeRecordData40,
   decodeRecordData16,
+  decodeRecordRealTimeLog52,
   decodeUserData72,
   encodeDeviceTime,
   exportErrorMessage,

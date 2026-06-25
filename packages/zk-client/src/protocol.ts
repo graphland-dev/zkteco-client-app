@@ -256,6 +256,14 @@ export function decodeRecordData16(
 }
 
 export function decodeRecordRealTimeLog18(recordData: Buffer): RealTimeLog {
+  if (recordData.length >= 12) {
+    const userId = recordData.readUInt16LE(8);
+    const status = recordData.readUInt8(10);
+    const punch = recordData.readUInt8(11);
+    const attTime = parseHexToTime(recordData.subarray(12, 18));
+    return { userId, attTime, status, punch };
+  }
+
   return {
     userId: recordData.readUIntLE(8, 1),
     attTime: parseHexToTime(recordData.subarray(12, 18)),
@@ -265,10 +273,11 @@ export function decodeRecordRealTimeLog18(recordData: Buffer): RealTimeLog {
 export function decodeRecordRealTimeLog52(recordData: Buffer): RealTimeLog {
   const payload = removeTcpHeader(recordData);
   const recvData = payload.subarray(8);
-  return {
-    userId: readAsciiField(recvData, 0, 9),
-    attTime: parseHexToTime(recvData.subarray(26, 32)),
-  };
+  const userId = readAsciiField(recvData, 0, 24);
+  const status = recvData.length > 24 ? recvData.readUInt8(24) : undefined;
+  const punch = recvData.length > 25 ? recvData.readUInt8(25) : undefined;
+  const attTime = parseHexToTime(recvData.subarray(26, 32));
+  return { userId, attTime, status, punch };
 }
 
 export function parseUsersFromBuffer(
@@ -276,6 +285,7 @@ export function parseUsersFromBuffer(
   packetSize: number,
   ip?: string,
 ): User[] {
+  void ip;
   const users: User[] = [];
   let userData = data.subarray(4);
   while (userData.length >= packetSize) {

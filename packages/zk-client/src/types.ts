@@ -84,6 +84,8 @@ export interface GetUserAttendancesOptions {
 export interface RealTimeLog {
   userId: string | number;
   attTime: Date;
+  status?: number;
+  punch?: number;
 }
 
 export interface ZkClientOptions {

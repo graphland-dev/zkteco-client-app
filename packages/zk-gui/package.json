@@ -1,0 +1,31 @@
+{
+  "name": "@graphland/zk-gui",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev:vite": "vite",
+    "dev": "tauri dev",
+    "build:vite": "tsc --noEmit && vite build",
+    "build:sidecar": "bun run scripts/build-sidecar.ts",
+    "build": "bun run build:vite && bun run build:sidecar",
+    "build:app": "CARGO_TARGET_DIR=src-tauri/target bun run tauri build",
+    "tauri": "tauri",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@graphland/zk-client": "workspace:*",
+    "@tauri-apps/api": "^2.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0",
+    "@types/bun": "latest",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.5.0",
+    "typescript": "^5.8.0",
+    "vite": "^6.3.0"
+  }
+}
