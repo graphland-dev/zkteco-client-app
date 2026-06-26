@@ -20,7 +20,12 @@ import {
   parseUsersFromBuffer,
   removeTcpHeader,
 } from "../protocol.ts";
-import type { DeviceInfo, ReadBufferResult, RealTimeLog, Transport } from "../types.ts";
+import type {
+  DeviceInfo,
+  ReadBufferResult,
+  RealTimeLog,
+  Transport,
+} from "../types.ts";
 
 export class TcpTransport implements Transport {
   readonly ip: string;
@@ -135,14 +140,20 @@ export class TcpTransport implements Transport {
       this.socket.write(msg, (err) => {
         if (err) reject(err);
         timer = setTimeout(
-          () => reject(new Error("TIMEOUT_IN_RECEIVING_RESPONSE_AFTER_REQUESTING_DATA")),
+          () =>
+            reject(
+              new Error("TIMEOUT_IN_RECEIVING_RESPONSE_AFTER_REQUESTING_DATA"),
+            ),
           this.timeout,
         );
       });
     });
   }
 
-  async executeCmd(command: number, data: Buffer | string = ""): Promise<Buffer> {
+  async executeCmd(
+    command: number,
+    data: Buffer | string = "",
+  ): Promise<Buffer> {
     if (command === COMMANDS.CMD_CONNECT) {
       this.sessionId = 0;
       this.replyId = 0;
@@ -172,7 +183,12 @@ export class TcpTransport implements Transport {
     const reqData = Buffer.alloc(8);
     reqData.writeUInt32LE(start, 0);
     reqData.writeUInt32LE(size, 4);
-    const buf = createTCPHeader(COMMANDS.CMD_DATA_RDY, this.sessionId, this.replyId, reqData);
+    const buf = createTCPHeader(
+      COMMANDS.CMD_DATA_RDY,
+      this.sessionId,
+      this.replyId,
+      reqData,
+    );
     this.socket?.write(buf);
   }
 
@@ -184,7 +200,12 @@ export class TcpTransport implements Transport {
       if (!this.socket) return reject(new Error("Socket is not connected"));
 
       this.replyId++;
-      const buf = createTCPHeader(COMMANDS.CMD_DATA_WRRQ, this.sessionId, this.replyId, reqData);
+      const buf = createTCPHeader(
+        COMMANDS.CMD_DATA_WRRQ,
+        this.sessionId,
+        this.replyId,
+        reqData,
+      );
 
       this.requestData(buf)
         .then((reply) => {
@@ -199,7 +220,11 @@ export class TcpTransport implements Transport {
             header.commandId !== COMMANDS.CMD_ACK_OK &&
             header.commandId !== COMMANDS.CMD_PREPARE_DATA
           ) {
-            reject(new Error(`ERROR_IN_UNHANDLE_CMD ${exportErrorMessage(header.commandId)}`));
+            reject(
+              new Error(
+                `ERROR_IN_UNHANDLE_CMD ${exportErrorMessage(header.commandId)}`,
+              ),
+            );
             return;
           }
 
@@ -226,7 +251,11 @@ export class TcpTransport implements Transport {
             if (checkNotEventTCP(packet)) return;
             if (timer) clearTimeout(timer);
             timer = setTimeout(
-              () => finish(replyData, new Error(`TIME OUT !! ${totalPackets} PACKETS REMAIN !`)),
+              () =>
+                finish(
+                  replyData,
+                  new Error(`TIME OUT !! ${totalPackets} PACKETS REMAIN !`),
+                ),
               timeout,
             );
 
@@ -240,10 +269,14 @@ export class TcpTransport implements Transport {
               totalBuffer = totalBuffer.subarray(8 + packetLength);
 
               if (
-                (totalPackets > 1 && realTotalBuffer.length === MAX_CHUNK + 8) ||
+                (totalPackets > 1 &&
+                  realTotalBuffer.length === MAX_CHUNK + 8) ||
                 (totalPackets === 1 && realTotalBuffer.length === remain + 8)
               ) {
-                replyData = Buffer.concat([replyData, realTotalBuffer.subarray(8)]);
+                replyData = Buffer.concat([
+                  replyData,
+                  realTotalBuffer.subarray(8),
+                ]);
                 totalBuffer = Buffer.alloc(0);
                 realTotalBuffer = Buffer.alloc(0);
                 totalPackets -= 1;
@@ -277,7 +310,10 @@ export class TcpTransport implements Transport {
     return result;
   }
 
-  async connect(onError?: (error: Error) => void, onClose?: () => void): Promise<void> {
+  async connect(
+    onError?: (error: Error) => void,
+    onClose?: () => void,
+  ): Promise<void> {
     await this.createSocket(onError, onClose);
     const reply = await this.executeCmd(COMMANDS.CMD_CONNECT, "");
     if (!reply || reply.length < 6) {
@@ -319,7 +355,10 @@ export class TcpTransport implements Transport {
   }
 
   async disableDevice(): Promise<Buffer> {
-    return this.executeCmd(COMMANDS.CMD_DISABLEDEVICE, REQUEST_DATA.DISABLE_DEVICE);
+    return this.executeCmd(
+      COMMANDS.CMD_DISABLEDEVICE,
+      REQUEST_DATA.DISABLE_DEVICE,
+    );
   }
 
   async enableDevice(): Promise<Buffer> {

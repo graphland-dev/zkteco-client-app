@@ -58,7 +58,9 @@ export function UserPunchesSheet({
   const deleteMutation = useMutation({
     mutationFn: deleteUserPunch,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["device-user-punches", user?.userId] });
+      queryClient.invalidateQueries({
+        queryKey: ["device-user-punches", user?.userId],
+      });
     },
   });
 
@@ -107,7 +109,10 @@ export function UserPunchesSheet({
   );
 
   const handleDelete = (record: PunchRecord) => {
-    const timeLabel = formatDatePattern(new Date(record.recordTime), "dd/MM/yyyy HH:mm");
+    const timeLabel = formatDatePattern(
+      new Date(record.recordTime),
+      "dd/MM/yyyy HH:mm",
+    );
     confirm({
       title: "Delete punch",
       description: `Remove the ${record.punchLabel ?? "punch"} at ${timeLabel} from the device? Other users' attendance records are preserved.`,
@@ -149,7 +154,9 @@ export function UserPunchesSheet({
         {deleteMutation.error ? (
           <Alert variant="destructive">
             <AlertTitle>Delete failed</AlertTitle>
-            <AlertDescription>{getMutationErrorMessage(deleteMutation.error)}</AlertDescription>
+            <AlertDescription>
+              {getMutationErrorMessage(deleteMutation.error)}
+            </AlertDescription>
           </Alert>
         ) : null}
 

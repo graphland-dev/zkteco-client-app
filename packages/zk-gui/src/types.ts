@@ -1,7 +1,15 @@
-import type { ConnectionType, DeviceInfo, UserRole, ZkClientOptions } from "@graphland/zk-client";
+import type {
+  ConnectionType,
+  DeviceInfo,
+  UserRole,
+  ZkClientOptions,
+} from "@graphland/zk-client";
 
 export type ClientConfig = Required<Pick<ZkClientOptions, "ip">> &
-  Pick<ZkClientOptions, "port" | "timeout" | "udpPort" | "commKey" | "openDoorDelaySec"> & {
+  Pick<
+    ZkClientOptions,
+    "port" | "timeout" | "udpPort" | "commKey" | "openDoorDelaySec"
+  > & {
     webhookUrl?: string;
     webhookSecret?: string;
   };
@@ -107,4 +115,8 @@ export interface PunchRecord {
   statusLabel?: string;
 }
 
-export type { CsvUserRow, ImportUsersOptions, ImportUsersResult } from "./user-csv";
+export type {
+  CsvUserRow,
+  ImportUsersOptions,
+  ImportUsersResult,
+} from "./user-csv";
