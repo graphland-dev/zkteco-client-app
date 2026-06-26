@@ -1,8 +1,9 @@
-import type { ConnectionType, DeviceInfo, ZkClientOptions } from "@graphland/zk-client";
+import type { ConnectionType, DeviceInfo, UserRole, ZkClientOptions } from "@graphland/zk-client";
 
 export type ClientConfig = Required<Pick<ZkClientOptions, "ip">> &
   Pick<ZkClientOptions, "port" | "timeout" | "udpPort" | "commKey" | "openDoorDelaySec"> & {
     webhookUrl?: string;
+    webhookSecret?: string;
   };
 
 export interface WebhookPassRecord {
@@ -76,3 +77,34 @@ export interface SyncAttendanceResult {
   errors: string[];
   durationMs: number;
 }
+
+export interface DeviceUser {
+  uid: number;
+  role: number;
+  name: string;
+  password?: string;
+  cardno?: number;
+  userId: string;
+  fingerprintCount?: number;
+  fingerprintIndices?: number[];
+}
+
+export interface UserWriteInput {
+  userId: string;
+  name: string;
+  password?: string;
+  cardno?: number;
+  role?: UserRole;
+}
+
+export interface PunchRecord {
+  userSn?: number;
+  deviceUserId: string | number;
+  recordTime: string;
+  punch?: number;
+  punchLabel?: string;
+  status?: number;
+  statusLabel?: string;
+}
+
+export type { CsvUserRow, ImportUsersOptions, ImportUsersResult } from "./user-csv";

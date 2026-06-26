@@ -3,7 +3,7 @@ import {
   RECORD_PACKET_SIZE_TCP,
   RECORD_PACKET_SIZE_UDP,
 } from "./constants.ts";
-import { parseAttendancesFromBuffer, parseUsersFromBuffer } from "./protocol.ts";
+import { parseAttendancesFromBuffer, parseUsersFromBuffer, encodeAttendancesBuffer, parseFingerprintTemplatesFromBuffer } from "./protocol.ts";
 import { TcpTransport } from "./transport/tcp.ts";
 import { UdpTransport } from "./transport/udp.ts";
 import { encodeUser } from "./user-encoding.ts";
@@ -13,7 +13,9 @@ import type {
   AttendanceRecord,
   ConnectCallbacks,
   CreateUserInput,
+  DeleteAttendanceCriteria,
   DeviceInfo,
+  FingerprintTemplateIndex,
   GetUserAttendancesOptions,
   RealTimeLog,
   Transport,
@@ -199,6 +201,15 @@ export class ZkClient {
     });
   }
 
+  async getFingerprintTemplates(): Promise<FingerprintTemplateIndex[]> {
+    return this.run("getFingerprintTemplates", async () => {
+      const { data, err } = await this.transport!.getFingerprintTemplates();
+      const templates = parseFingerprintTemplatesFromBuffer(data);
+      if (err) throw err;
+      return templates;
+    });
+  }
+
   async getUserById(userId: string): Promise<User> {
     const user = await this.searchUser({ userId, match: "exact" });
     if (!user) throw new ZkNotFoundError("User", userId);
@@ -381,6 +392,43 @@ export class ZkClient {
   async clearAttendanceLog(): Promise<void> {
     return this.run("clearAttendanceLog", async () => {
       await this.transport!.clearAttendanceLog();
+    });
+  }
+
+  async replaceAttendanceLog(records: AttendanceRecord[]): Promise<void> {
+    return this.run("replaceAttendanceLog", async () => {
+      const transport = this.transport!;
+      const buffer = encodeAttendancesBuffer(records, this.recordPacketSize);
+      await transport.disableDevice();
+      try {
+        await transport.clearAttendanceLog();
+        if (records.length > 0) {
+          await transport.sendWithBuffer(buffer);
+        }
+        await transport.refreshData();
+      } finally {
+        await transport.enableDevice();
+      }
+    });
+  }
+
+  async deleteAttendanceRecord(criteria: DeleteAttendanceCriteria): Promise<void> {
+    return this.run("deleteAttendanceRecord", async () => {
+      const records = await this.getAttendances();
+      const targetTime = criteria.recordTime.getTime();
+      const remaining = records.filter((record) => {
+        const sameUser = String(record.deviceUserId) === String(criteria.userId);
+        const sameTime = record.recordTime.getTime() === targetTime;
+        const sameSn =
+          criteria.userSn === undefined || record.userSn === criteria.userSn;
+        return !(sameUser && sameTime && sameSn);
+      });
+
+      if (remaining.length === records.length) {
+        throw new ZkNotFoundError("AttendanceRecord", criteria.userId);
+      }
+
+      await this.replaceAttendanceLog(remaining);
     });
   }
 

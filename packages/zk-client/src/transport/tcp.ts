@@ -348,6 +348,12 @@ export class TcpTransport implements Transport {
     return this.withFreeData(() => this.readWithBuffer(REQUEST_DATA.GET_USERS));
   }
 
+  async getFingerprintTemplates(): Promise<ReadBufferResult> {
+    return this.withFreeData(() =>
+      this.readWithBuffer(REQUEST_DATA.GET_FINGERPRINT_TEMPLATES),
+    );
+  }
+
   async getAttendances(
     onProgress?: (received: number, total: number) => void,
   ): Promise<ReadBufferResult> {
@@ -358,6 +364,21 @@ export class TcpTransport implements Transport {
 
   async clearAttendanceLog(): Promise<Buffer> {
     return this.executeCmd(COMMANDS.CMD_CLEAR_ATTLOG, "");
+  }
+
+  async sendWithBuffer(buffer: Buffer): Promise<void> {
+    await this.freeData();
+    const size = buffer.length;
+    const prep = Buffer.alloc(4);
+    prep.writeUInt32LE(size, 0);
+    await this.executeCmd(COMMANDS.CMD_PREPARE_DATA, prep);
+
+    let offset = 0;
+    while (offset < size) {
+      const chunk = buffer.subarray(offset, offset + MAX_CHUNK);
+      await this.executeCmd(COMMANDS.CMD_DATA, chunk);
+      offset += chunk.length;
+    }
   }
 
   async setUser(payload: Buffer): Promise<Buffer> {

@@ -2,13 +2,23 @@ import { getPunchLabel, getVerifyModeLabel } from "@graphland/zk-client";
 import type { AttendanceRecord, RealTimeLog } from "@graphland/zk-client";
 import type { WebhookAttendanceItem, WebhookBody } from "./types.ts";
 
-export async function sendWebhookBatch(url: string, items: WebhookBody): Promise<void> {
+export async function sendWebhookBatch(
+  url: string,
+  items: WebhookBody,
+  options?: { secret?: string },
+): Promise<void> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "User-Agent": "Graphland-ZKT-Client/1.0",
+  };
+  const secret = normalizeWebhookSecret(options?.secret);
+  if (secret) {
+    headers.Authorization = `Bearer ${secret}`;
+  }
+
   const response = await fetch(url, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "User-Agent": "Graphland-GKT-Client/1.0",
-    },
+    headers,
     body: JSON.stringify(items),
   });
 
@@ -80,6 +90,10 @@ export function toAttendanceWebhookItem(
 }
 
 export function normalizeWebhookUrl(value: string | undefined): string {
+  return value?.trim() ?? "";
+}
+
+export function normalizeWebhookSecret(value: string | undefined): string {
   return value?.trim() ?? "";
 }
 

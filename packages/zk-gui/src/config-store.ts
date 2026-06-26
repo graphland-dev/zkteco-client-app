@@ -18,6 +18,7 @@ export const DEFAULT_CONFIG: ClientConfig = {
   commKey: 0,
   openDoorDelaySec: 3,
   webhookUrl: "",
+  webhookSecret: "",
 };
 
 export async function loadConfig(): Promise<ClientConfig> {

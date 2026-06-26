@@ -10,6 +10,8 @@ import {
   testConnection,
 } from "./api";
 import type { ClientConfig, ConnectionStatus, SyncAttendanceResult, TestConnectionResult } from "./types";
+import { UsersPage } from "@/features/users";
+import { useAppTab } from "@/hooks/use-url-search-params";
 import "./styles.css";
 
 const EMPTY_CONFIG: ClientConfig = {
@@ -20,6 +22,7 @@ const EMPTY_CONFIG: ClientConfig = {
   commKey: 0,
   openDoorDelaySec: 3,
   webhookUrl: "",
+  webhookSecret: "",
 };
 
 type BusyAction = "save" | "connect" | "disconnect" | "test" | "refresh" | "sync" | null;
@@ -97,6 +100,7 @@ export function App() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [activeTab, setActiveTab] = useAppTab();
 
   const refreshStatus = useCallback(async () => {
     const next = await getStatus();
@@ -171,7 +175,7 @@ export function App() {
       <header className="app-header">
         <div>
           <p className="eyebrow">Graphland</p>
-          <h1>GKT Client</h1>
+          <h1>ZKT Client</h1>
           <p className="subtitle">Configure your device and verify connectivity.</p>
         </div>
         <div className={statusClass(status)}>
@@ -180,8 +184,26 @@ export function App() {
         </div>
       </header>
 
-      {status.deviceInfo ? <DeviceInfoPanel info={status.deviceInfo} /> : null}
+      <nav className="app-tabs" aria-label="Main sections">
+        <button
+          type="button"
+          className={activeTab === "device" ? "tab active" : "tab"}
+          onClick={() => setActiveTab("device")}
+        >
+          Device
+        </button>
+        <button
+          type="button"
+          className={activeTab === "users" ? "tab active" : "tab"}
+          onClick={() => setActiveTab("users")}
+        >
+          Users
+        </button>
+      </nav>
 
+      {activeTab === "device" && status.deviceInfo ? <DeviceInfoPanel info={status.deviceInfo} /> : null}
+
+      {activeTab === "device" ? (
       <main className="layout">
         <section className="panel">
           <div className="panel-header">
@@ -263,8 +285,19 @@ export function App() {
                 placeholder="https://api.example.com/attendance/pass"
               />
             </label>
+            <label>
+              <span>Webhook secret</span>
+              <input
+                type="password"
+                value={config.webhookSecret ?? ""}
+                onChange={(event) => updateField("webhookSecret", event.target.value)}
+                placeholder="Optional bearer token"
+                autoComplete="off"
+              />
+            </label>
             <p className="field-hint">
-              Live passes and manual sync both POST a JSON array of attendance records to this URL.
+              Live passes and manual sync both POST a JSON array of attendance records to the webhook URL.
+              When a secret is set, requests include <code>Authorization: Bearer &lt;secret&gt;</code>.
             </p>
 
             <div className="button-row">
@@ -493,6 +526,9 @@ export function App() {
           </div>
         </section>
       </main>
+      ) : (
+        <UsersPage connected={status.connected} />
+      )}
     </div>
   );
 }

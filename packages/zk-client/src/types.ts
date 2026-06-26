@@ -12,6 +12,12 @@ export interface User {
   userId: string;
 }
 
+export interface FingerprintTemplateIndex {
+  uid: number;
+  fingerIndex: number;
+  valid: number;
+}
+
 export interface CreateUserInput {
   userId: string;
   name: string;
@@ -75,6 +81,12 @@ export interface AttendanceFilter {
   to?: Date;
 }
 
+export interface DeleteAttendanceCriteria {
+  userId: string;
+  recordTime: Date;
+  userSn?: number;
+}
+
 export interface GetUserAttendancesOptions {
   from?: Date;
   to?: Date;
@@ -135,10 +147,12 @@ export interface Transport {
   refreshData(): Promise<Buffer>;
   getInfo(): Promise<DeviceInfo>;
   getUsers(): Promise<ReadBufferResult>;
+  getFingerprintTemplates(): Promise<ReadBufferResult>;
   getAttendances(
     onProgress?: (received: number, total: number) => void,
   ): Promise<ReadBufferResult>;
   clearAttendanceLog(): Promise<Buffer>;
+  sendWithBuffer(buffer: Buffer): Promise<void>;
   setUser(payload: Buffer): Promise<Buffer>;
   deleteUser(uid: number): Promise<Buffer>;
   openDoor(delaySec: number): Promise<Buffer>;

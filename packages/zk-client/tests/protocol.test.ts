@@ -9,11 +9,15 @@ import {
   decodeRecordData16,
   decodeRecordRealTimeLog52,
   decodeUserData72,
+  encodeAttendancesBuffer,
   encodeDeviceTime,
+  encodeRecordData40,
   exportErrorMessage,
   parseAttendancesFromBuffer,
+  parseFingerprintTemplatesFromBuffer,
   parseUsersFromBuffer,
   removeTcpHeader,
+  summarizeFingerprintTemplates,
 } from "../src/protocol.ts";
 
 describe("headers", () => {
@@ -103,6 +107,38 @@ describe("decodeRecordData40", () => {
     expect(record.ip).toBe("192.168.0.1");
     expect(record.recordTime.getFullYear()).toBe(2026);
   });
+
+  test("encode round-trips with decodeRecordData40", () => {
+    const buf = Buffer.alloc(40);
+    buf.writeUInt16LE(6850, 0);
+    Buffer.from("5011", "ascii").copy(buf, 2);
+    buf.writeUInt8(1, 26);
+    const time = encodeDeviceTime(new Date(2026, 5, 24, 13, 39, 43));
+    buf.writeUInt32LE(time, 27);
+    buf.writeUInt8(1, 31);
+    buf[35] = 0xff;
+
+    const record = decodeRecordData40(buf, "192.168.0.1");
+    const encoded = encodeRecordData40(record);
+    expect(encoded.equals(buf)).toBe(true);
+  });
+
+  test("encodeAttendancesBuffer matches parseAttendancesFromBuffer", () => {
+    const buf = Buffer.alloc(40);
+    buf.writeUInt16LE(6850, 0);
+    Buffer.from("5011", "ascii").copy(buf, 2);
+    buf.writeUInt8(1, 26);
+    buf.writeUInt32LE(encodeDeviceTime(new Date(2026, 5, 24, 13, 39, 43)), 27);
+    buf.writeUInt8(1, 31);
+    buf[35] = 0xff;
+
+    const payload = Buffer.alloc(44);
+    payload.writeUInt32LE(40, 0);
+    buf.copy(payload, 4);
+    const records = parseAttendancesFromBuffer(payload, 40);
+    const encoded = encodeAttendancesBuffer(records, 40);
+    expect(encoded.equals(payload)).toBe(true);
+  });
 });
 
 describe("decodeRecordData16", () => {
@@ -152,6 +188,32 @@ describe("parse buffers", () => {
     expect(records).toHaveLength(1);
     expect(records[0]!.deviceUserId).toBe("99");
     expect(records[0]!.punch).toBe(1);
+  });
+});
+
+describe("parseFingerprintTemplatesFromBuffer", () => {
+  test("parses template index records and summarizes per uid", () => {
+    const buf = Buffer.alloc(24);
+    buf.writeInt32LE(20, 0);
+
+    buf.writeUInt16LE(10, 4);
+    buf.writeUInt16LE(5, 6);
+    buf.writeUInt8(0, 8);
+    buf.writeUInt8(1, 9);
+
+    buf.writeUInt16LE(10, 14);
+    buf.writeUInt16LE(5, 16);
+    buf.writeUInt8(2, 18);
+    buf.writeUInt8(1, 19);
+
+    const parsed = parseFingerprintTemplatesFromBuffer(buf);
+    expect(parsed).toEqual([
+      { uid: 5, fingerIndex: 0, valid: 1 },
+      { uid: 5, fingerIndex: 2, valid: 1 },
+    ]);
+
+    const summary = summarizeFingerprintTemplates(parsed);
+    expect(summary.get(5)).toEqual([0, 2]);
   });
 });
 

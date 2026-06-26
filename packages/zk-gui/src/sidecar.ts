@@ -10,7 +10,7 @@ const port = Number(process.env.ZK_SIDECAR_PORT ?? 0);
 function withCors(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", "*");
-  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS");
   headers.set("Access-Control-Allow-Headers", "Content-Type");
   headers.set("Access-Control-Max-Age", "86400");
   return new Response(response.body, {
@@ -41,6 +41,7 @@ async function readConfig(req: Request): Promise<ClientConfig> {
     commKey: Number(body.commKey ?? 0),
     openDoorDelaySec: Number(body.openDoorDelaySec ?? 3),
     webhookUrl,
+    webhookSecret: body.webhookSecret?.trim() ?? "",
   };
 }
 
@@ -137,6 +138,97 @@ const routes: Record<string, Partial<Record<string, RouteHandler>>> = {
           },
           400,
         );
+      }
+    },
+  },
+  "/api/users": {
+    GET: async () => {
+      try {
+        return json(await manager.listUsers());
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    },
+    POST: async (req) => {
+      try {
+        const body = (await req.json()) as Parameters<typeof manager.createUser>[0];
+        return json(await manager.createUser(body));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    },
+    PATCH: async (req) => {
+      try {
+        const body = (await req.json()) as { userId: string } & Omit<
+          Parameters<typeof manager.updateUser>[1],
+          never
+        >;
+        const { userId, ...input } = body;
+        if (!userId?.trim()) throw new Error("User ID is required");
+        return json(await manager.updateUser(userId, input));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    },
+    DELETE: async (req) => {
+      try {
+        const body = (await req.json()) as { userId: string };
+        if (!body.userId?.trim()) throw new Error("User ID is required");
+        await manager.deleteUser(body.userId);
+        return json({ ok: true });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    },
+  },
+  "/api/users/import": {
+    POST: async (req) => {
+      try {
+        const body = (await req.json()) as { csv: string; updateExisting?: boolean };
+        return json(await manager.importUsers(body));
+      } catch (err) {
+        return json(
+          {
+            ok: false,
+            total: 0,
+            created: 0,
+            updated: 0,
+            skipped: 0,
+            failed: 0,
+            errors: [err instanceof Error ? err.message : String(err)],
+            durationMs: 0,
+          },
+          400,
+        );
+      }
+    },
+  },
+  "/api/users/punches": {
+    GET: async (req) => {
+      try {
+        const url = new URL(req.url);
+        const userId = url.searchParams.get("userId");
+        if (!userId?.trim()) throw new Error("User ID is required");
+        const from = url.searchParams.get("from") ?? undefined;
+        const to = url.searchParams.get("to") ?? undefined;
+        return json(await manager.getUserPunchHistory(userId, { from, to }));
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
+      }
+    },
+    DELETE: async (req) => {
+      try {
+        const body = (await req.json()) as {
+          userId: string;
+          recordTime: string;
+          userSn?: number;
+        };
+        if (!body.userId?.trim()) throw new Error("User ID is required");
+        if (!body.recordTime?.trim()) throw new Error("Record time is required");
+        await manager.deleteUserPunch(body);
+        return json({ ok: true });
+      } catch (err) {
+        return json({ error: err instanceof Error ? err.message : String(err) }, 400);
       }
     },
   },

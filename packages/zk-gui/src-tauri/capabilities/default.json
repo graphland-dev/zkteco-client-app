@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capabilities for Graphland GKT Client",
+  "description": "Default capabilities for Graphland ZKT Client",
   "windows": ["main"],
   "permissions": [
     "core:default",

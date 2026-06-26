@@ -1,6 +1,6 @@
 import { COMMANDS, USHRT_MAX } from "./constants.ts";
-import type { AttendanceRecord, RealTimeLog, User } from "./types.ts";
 import { getPunchLabel, getVerifyModeLabel } from "./attendance.ts";
+import type { AttendanceRecord, FingerprintTemplateIndex, RealTimeLog, User } from "./types.ts";
 
 const TCP_PREFIX = Buffer.from([
   0x50, 0x50, 0x82, 0x7d, 0x13, 0x00, 0x00, 0x00,
@@ -297,6 +297,98 @@ export function parseUsersFromBuffer(
     userData = userData.subarray(packetSize);
   }
   return users;
+}
+
+export function parseFingerprintTemplatesFromBuffer(
+  data: Buffer,
+): FingerprintTemplateIndex[] {
+  if (data.length < 4) return [];
+
+  let totalSize = data.readInt32LE(0);
+  let offset = 4;
+  const templates: FingerprintTemplateIndex[] = [];
+
+  while (totalSize > 0 && offset + 6 <= data.length) {
+    const size = data.readUInt16LE(offset);
+    if (size < 6 || offset + size > data.length) break;
+
+    templates.push({
+      uid: data.readUInt16LE(offset + 2),
+      fingerIndex: data.readUInt8(offset + 4),
+      valid: data.readUInt8(offset + 5),
+    });
+
+    offset += size;
+    totalSize -= size;
+  }
+
+  return templates;
+}
+
+export function summarizeFingerprintTemplates(
+  templates: FingerprintTemplateIndex[],
+): Map<number, number[]> {
+  const map = new Map<number, number[]>();
+
+  for (const template of templates) {
+    if (!template.valid) continue;
+    const indices = map.get(template.uid) ?? [];
+    if (!indices.includes(template.fingerIndex)) {
+      indices.push(template.fingerIndex);
+    }
+    map.set(template.uid, indices);
+  }
+
+  for (const [uid, indices] of map) {
+    indices.sort((a, b) => a - b);
+    map.set(uid, indices);
+  }
+
+  return map;
+}
+
+function writeAsciiField(buf: Buffer, value: string, offset: number, length: number): void {
+  const field = Buffer.alloc(length);
+  const clean = value.replace(/[^\x00-\x7F]/g, "");
+  if (clean.length > 0) {
+    Buffer.from(clean, "ascii").copy(field, 0, 0, Math.min(clean.length, length));
+  }
+  field.copy(buf, offset);
+}
+
+export function encodeRecordData40(record: AttendanceRecord): Buffer {
+  const buf = Buffer.alloc(40);
+  buf.writeUInt16LE(record.userSn ?? 0, 0);
+  writeAsciiField(buf, String(record.deviceUserId), 2, 24);
+  buf.writeUInt8(record.status ?? 0, 26);
+  buf.writeUInt32LE(encodeDeviceTime(record.recordTime), 27);
+  buf.writeUInt8(record.punch ?? 0, 31);
+  buf[35] = 0xff;
+  return buf;
+}
+
+export function encodeRecordData16(record: AttendanceRecord): Buffer {
+  const buf = Buffer.alloc(16);
+  const userId = Number(record.deviceUserId);
+  buf.writeUInt32LE(Number.isNaN(userId) ? 0 : userId, 0);
+  buf.writeUInt32LE(encodeDeviceTime(record.recordTime), 4);
+  buf.writeUInt8(record.status ?? 0, 8);
+  buf.writeUInt8(record.punch ?? 0, 9);
+  return buf;
+}
+
+export function encodeAttendancesBuffer(
+  records: AttendanceRecord[],
+  packetSize: number,
+): Buffer {
+  const body = Buffer.concat(
+    records.map((record) =>
+      packetSize === 40 ? encodeRecordData40(record) : encodeRecordData16(record),
+    ),
+  );
+  const header = Buffer.alloc(4);
+  header.writeUInt32LE(body.length, 0);
+  return Buffer.concat([header, body]);
 }
 
 export function parseAttendancesFromBuffer(

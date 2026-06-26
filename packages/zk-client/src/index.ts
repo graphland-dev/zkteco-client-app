@@ -11,6 +11,13 @@ export { ZkClient, ZkClient as default } from "./client.ts";
 export { COMMANDS, REQUEST_DATA } from "./constants.ts";
 export { ZkError, ZkNotFoundError, ZkConnectionError, ERROR_TYPES } from "./errors.ts";
 export {
+  encodeRecordData40,
+  encodeRecordData16,
+  encodeAttendancesBuffer,
+  parseFingerprintTemplatesFromBuffer,
+  summarizeFingerprintTemplates,
+} from "./protocol.ts";
+export {
   encodeUser,
   encodeUserInfo28,
   encodeUserInfo72,
@@ -22,7 +29,9 @@ export type {
   ConnectionType,
   ConnectCallbacks,
   CreateUserInput,
+  DeleteAttendanceCriteria,
   DeviceInfo,
+  FingerprintTemplateIndex,
   GetUserAttendancesOptions,
   RealTimeLog,
   UpdateUserInput,
