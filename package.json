@@ -8,9 +8,12 @@
   ],
   "scripts": {
     "start": "bun run app.ts",
+    "dev": "bun run --filter @graphland/zk-gui dev",
     "gui": "bun run --filter @graphland/zk-gui dev",
+    "build": "bun run scripts/build.mjs",
+    "build:fast": "bun run scripts/build.mjs -- --skip-typecheck --skip-tests",
     "gui:build": "bun run --filter @graphland/zk-gui build:app",
-    "typecheck": "bun run --filter @graphland/zk-client typecheck",
+    "typecheck": "bun run --filter @graphland/zk-client typecheck && bun run --filter @graphland/zk-gui typecheck",
     "test": "bun run --filter @graphland/zk-client test"
   },
   "dependencies": {

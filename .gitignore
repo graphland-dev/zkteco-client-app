@@ -1,1 +1,11 @@
 node_modules/
+
+# Frontend build (Vite)
+packages/zk-gui/dist/
+
+# Rust / Tauri build
+**/target/
+
+# Compiled sidecar binaries (built by scripts/build-sidecar.ts)
+packages/zk-gui/src-tauri/binaries/*
+!packages/zk-gui/src-tauri/binaries/.gitkeep
