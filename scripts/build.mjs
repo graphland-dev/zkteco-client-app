@@ -64,7 +64,7 @@ if (!skipTests) {
   run("Test zk-client", "bun", ["run", "--filter", "@graphland/zk-client", "test"]);
 }
 
-const tauriArgs = ["run", "tauri", "build"];
+const tauriArgs = ["x", "tauri", "build"];
 if (debug) {
   tauriArgs.push("--debug");
 }
@@ -77,4 +77,7 @@ run("Build desktop app (Vite + sidecar + Tauri)", "bun", tauriArgs, {
 });
 
 console.log("\nBuild complete.");
-console.log(`Artifacts: packages/zk-gui/src-tauri/target/release/bundle/`);
+console.log(`Artifacts: packages/zk-gui/src-tauri/src-tauri/target/release/`);
+console.log(`  - zk-client-gui.exe (standalone)`);
+console.log(`  - bundle/nsis/*-setup.exe (installer)`);
+console.log(`  - bundle/msi/*.msi (installer)`);
