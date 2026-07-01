@@ -5,13 +5,16 @@ import {
   getStatus,
   loadConfig,
   refreshInfo,
+  resetDevice,
   saveConfig,
   syncAttendances,
   testConnection,
 } from "./api";
 import type { ClientConfig, ConnectionStatus, SyncAttendanceResult, TestConnectionResult } from "./types";
 import { UsersPage } from "@/features/users";
+import { AttendanceLogPage } from "@/features/attendance-log";
 import { useAppTab } from "@/hooks/use-url-search-params";
+import { useConfirmation } from "@/hooks/use-confirm";
 import "./styles.css";
 
 const EMPTY_CONFIG: ClientConfig = {
@@ -25,7 +28,7 @@ const EMPTY_CONFIG: ClientConfig = {
   webhookSecret: "",
 };
 
-type BusyAction = "save" | "connect" | "disconnect" | "test" | "refresh" | "sync" | null;
+type BusyAction = "save" | "connect" | "disconnect" | "test" | "refresh" | "sync" | "reset" | null;
 
 function statusLabel(status: ConnectionStatus): string {
   if (status.connected) {
@@ -101,6 +104,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
   const [activeTab, setActiveTab] = useAppTab();
+  const { trigger: confirm } = useConfirmation();
 
   const refreshStatus = useCallback(async () => {
     const next = await getStatus();
@@ -198,6 +202,13 @@ export function App() {
           onClick={() => setActiveTab("users")}
         >
           Users
+        </button>
+        <button
+          type="button"
+          className={activeTab === "attendance" ? "tab active" : "tab"}
+          onClick={() => setActiveTab("attendance")}
+        >
+          Attendance
         </button>
       </nav>
 
@@ -358,34 +369,8 @@ export function App() {
                       : "Configured"}
                 </dd>
               </div>
-              <div>
-                <dt>Passes sent</dt>
-                <dd>{status.webhook.passesForwarded}</dd>
-              </div>
             </dl>
           </div>
-
-          {status.webhook.enabled ? (
-            <div className="webhook-panel">
-              <p className="webhook-url">{status.webhook.url}</p>
-              {status.webhook.lastError ? (
-                <p className="error-text">Webhook error: {status.webhook.lastError}</p>
-              ) : null}
-              {status.webhook.recentPasses.length > 0 ? (
-                <ul className="pass-list">
-                  {status.webhook.recentPasses.map((pass, index) => (
-                    <li key={`${pass.attTime}-${pass.userId}-${index}`} className={pass.delivered ? "ok" : "fail"}>
-                      <span className="pass-user">{String(pass.userId)}</span>
-                      <span className="pass-time">{new Date(pass.attTime).toLocaleString()}</span>
-                      <span className="pass-state">{pass.delivered ? "Sent" : "Failed"}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="field-hint">Waiting for the next pass on the device…</p>
-              )}
-            </div>
-          ) : null}
 
           {status.lastError ? <p className="error-text">{status.lastError}</p> : null}
           {message ? <p className="success-text">{message}</p> : null}
@@ -490,6 +475,28 @@ export function App() {
                   className="danger"
                   disabled={busy !== null}
                   onClick={() =>
+                    confirm({
+                      title: "Reset device",
+                      description:
+                        "This permanently deletes all users, fingerprints, attendance logs, and other data on the ZKT device. This cannot be undone.",
+                      confirmText: "Reset device",
+                      variant: "destructive",
+                      onConfirm: () =>
+                        runAction("reset", async () => {
+                          const next = await resetDevice();
+                          setStatus(next);
+                          setMessage("Device has been fully reset.");
+                        }),
+                    })
+                  }
+                >
+                  {busy === "reset" ? "Resetting…" : "Reset device"}
+                </button>
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={busy !== null}
+                  onClick={() =>
                     runAction("disconnect", async () => {
                       const next = await disconnect();
                       setStatus(next);
@@ -526,8 +533,10 @@ export function App() {
           </div>
         </section>
       </main>
-      ) : (
+      ) : activeTab === "users" ? (
         <UsersPage connected={status.connected} />
+      ) : (
+        <AttendanceLogPage connected={status.connected} />
       )}
     </div>
   );

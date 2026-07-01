@@ -395,6 +395,20 @@ export class ZkClient {
     });
   }
 
+  /** Wipes all device data: users, fingerprints, attendance logs, and admin settings. */
+  async resetDevice(): Promise<void> {
+    return this.run("resetDevice", async () => {
+      const transport = this.transport!;
+      await transport.disableDevice();
+      try {
+        await transport.clearDeviceData();
+        await transport.refreshData();
+      } finally {
+        await transport.enableDevice();
+      }
+    });
+  }
+
   async replaceAttendanceLog(records: AttendanceRecord[]): Promise<void> {
     return this.run("replaceAttendanceLog", async () => {
       const transport = this.transport!;

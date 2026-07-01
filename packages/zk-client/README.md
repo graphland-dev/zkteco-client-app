@@ -153,6 +153,7 @@ await zk.disableDevice();
 await zk.enableDevice();
 await zk.refreshData();
 await zk.clearAttendanceLog();
+await zk.resetDevice(); // wipes users, fingerprints, logs, and settings
 ```
 
 ## Error handling

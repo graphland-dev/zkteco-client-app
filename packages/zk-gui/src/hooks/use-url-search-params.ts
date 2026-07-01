@@ -63,13 +63,24 @@ export function useUsersSearchParams() {
   return useMemo(() => ({ sp, navigate, patch }), [sp, navigate, patch]);
 }
 
-export function useAppTab(): ["device" | "users", (tab: "device" | "users") => void] {
-  const [tab, setTabState] = useState<"device" | "users">(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get("tab") === "users" ? "users" : "device";
-  });
+export type AppTab = "device" | "users" | "attendance";
 
-  const setTab = useCallback((next: "device" | "users") => {
+function parseAppTab(search: string): AppTab {
+  const value = new URLSearchParams(search).get("tab");
+  if (value === "users" || value === "attendance") return value;
+  return "device";
+}
+
+export function useAppTab(): [AppTab, (tab: AppTab) => void] {
+  const [tab, setTabState] = useState<AppTab>(() => parseAppTab(window.location.search));
+
+  useEffect(() => {
+    const onPopState = () => setTabState(parseAppTab(window.location.search));
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  const setTab = useCallback((next: AppTab) => {
     const params = new URLSearchParams(window.location.search);
     if (next === "device") {
       params.delete("tab");

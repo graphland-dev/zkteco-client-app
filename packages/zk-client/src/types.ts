@@ -152,6 +152,7 @@ export interface Transport {
     onProgress?: (received: number, total: number) => void,
   ): Promise<ReadBufferResult>;
   clearAttendanceLog(): Promise<Buffer>;
+  clearDeviceData(): Promise<Buffer>;
   sendWithBuffer(buffer: Buffer): Promise<void>;
   setUser(payload: Buffer): Promise<Buffer>;
   deleteUser(uid: number): Promise<Buffer>;

@@ -71,6 +71,10 @@ export async function refreshInfo(): Promise<ConnectionStatus> {
   return request<ConnectionStatus>("/api/refresh", { method: "POST" });
 }
 
+export async function resetDevice(): Promise<ConnectionStatus> {
+  return request<ConnectionStatus>("/api/device/reset", { method: "POST" });
+}
+
 export async function testConnection(config: ClientConfig): Promise<TestConnectionResult> {
   return request<TestConnectionResult>("/api/test", {
     method: "POST",
@@ -80,6 +84,10 @@ export async function testConnection(config: ClientConfig): Promise<TestConnecti
 
 export async function syncAttendances(): Promise<SyncAttendanceResult> {
   return request<SyncAttendanceResult>("/api/sync-attendance", { method: "POST" });
+}
+
+export async function clearAttendanceLog(): Promise<ConnectionStatus> {
+  return request<ConnectionStatus>("/api/webhook/clear-log", { method: "POST" });
 }
 
 export async function listUsers(): Promise<DeviceUser[]> {

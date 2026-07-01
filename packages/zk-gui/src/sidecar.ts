@@ -105,6 +105,21 @@ const routes: Record<string, Partial<Record<string, RouteHandler>>> = {
       }
     },
   },
+  "/api/device/reset": {
+    POST: async () => {
+      try {
+        return json(await manager.resetDevice());
+      } catch (err) {
+        return json(
+          {
+            ...manager.getStatus(),
+            error: err instanceof Error ? err.message : String(err),
+          },
+          400,
+        );
+      }
+    },
+  },
   "/api/test": {
     POST: async (req) => {
       try {
@@ -140,6 +155,9 @@ const routes: Record<string, Partial<Record<string, RouteHandler>>> = {
         );
       }
     },
+  },
+  "/api/webhook/clear-log": {
+    POST: async () => json(manager.clearWebhookLog()),
   },
   "/api/users": {
     GET: async () => {

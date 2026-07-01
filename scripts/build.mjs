@@ -36,6 +36,7 @@ Options:
 const skipTypecheck = args.includes("--skip-typecheck");
 const skipTests = args.includes("--skip-tests");
 const debug = args.includes("--debug");
+const bun = process.execPath;
 
 function run(label, command, commandArgs, options = {}) {
   console.log(`\n==> ${label}`);
@@ -56,12 +57,12 @@ function run(label, command, commandArgs, options = {}) {
 console.log("Graphland ZKT Client — production build\n");
 
 if (!skipTypecheck) {
-  run("Typecheck zk-client", "bun", ["run", "--filter", "@graphland/zk-client", "typecheck"]);
-  run("Typecheck zk-gui", "bun", ["run", "--filter", "@graphland/zk-gui", "typecheck"]);
+  run("Typecheck zk-client", bun, ["run", "--filter", "@graphland/zk-client", "typecheck"]);
+  run("Typecheck zk-gui", bun, ["run", "--filter", "@graphland/zk-gui", "typecheck"]);
 }
 
 if (!skipTests) {
-  run("Test zk-client", "bun", ["run", "--filter", "@graphland/zk-client", "test"]);
+  run("Test zk-client", bun, ["run", "--filter", "@graphland/zk-client", "test"]);
 }
 
 const tauriArgs = ["x", "tauri", "build"];
@@ -69,7 +70,7 @@ if (debug) {
   tauriArgs.push("--debug");
 }
 
-run("Build desktop app (Vite + sidecar + Tauri)", "bun", tauriArgs, {
+run("Build desktop app (Vite + sidecar + Tauri)", bun, tauriArgs, {
   cwd: guiDir,
   env: {
     CARGO_TARGET_DIR: "src-tauri/target",

@@ -405,6 +405,10 @@ export class TcpTransport implements Transport {
     return this.executeCmd(COMMANDS.CMD_CLEAR_ATTLOG, "");
   }
 
+  async clearDeviceData(): Promise<Buffer> {
+    return this.executeCmd(COMMANDS.CMD_CLEAR_DATA, "");
+  }
+
   async sendWithBuffer(buffer: Buffer): Promise<void> {
     await this.freeData();
     const size = buffer.length;

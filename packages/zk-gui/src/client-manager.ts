@@ -147,6 +147,15 @@ export class ClientManager {
     this.recentPasses = [record, ...this.recentPasses].slice(0, MAX_RECENT_PASSES);
   }
 
+  clearWebhookLog(): ConnectionStatus {
+    this.webhookPassesForwarded = 0;
+    this.webhookLastPassAt = null;
+    this.webhookLastDeliveredAt = null;
+    this.webhookLastError = null;
+    this.recentPasses = [];
+    return this.getStatus();
+  }
+
   private async handlePass(log: RealTimeLog): Promise<void> {
     const url = this.webhookUrl;
     const deviceIp = this.activeConfig?.ip;
@@ -247,6 +256,22 @@ export class ClientManager {
     this.lastError = null;
     try {
       this.deviceInfo = await this.client.getInfo();
+      return this.getStatus();
+    } catch (err) {
+      this.lastError = formatError(err);
+      throw new Error(this.lastError);
+    }
+  }
+
+  async resetDevice(): Promise<ConnectionStatus> {
+    if (!this.client?.isConnected) {
+      throw new Error("Not connected to a device");
+    }
+    this.lastError = null;
+    try {
+      await this.client.resetDevice();
+      this.deviceInfo = await this.client.getInfo();
+      this.clearWebhookLog();
       return this.getStatus();
     } catch (err) {
       this.lastError = formatError(err);
