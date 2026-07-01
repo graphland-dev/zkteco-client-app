@@ -1,10 +1,12 @@
 node_modules/
+.DS_Store
 
 # Frontend build (Vite)
 packages/zk-gui/dist/
 
 # Rust / Tauri build
 **/target/
+packages/zk-gui/src-tauri/src-tauri/
 
 # Compiled sidecar binaries (built by scripts/build-sidecar.ts)
 packages/zk-gui/src-tauri/binaries/*
