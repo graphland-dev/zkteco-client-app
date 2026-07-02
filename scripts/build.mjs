@@ -78,7 +78,15 @@ run("Build desktop app (Vite + sidecar + Tauri)", bun, tauriArgs, {
 });
 
 console.log("\nBuild complete.");
-console.log(`Artifacts: packages/zk-gui/src-tauri/src-tauri/target/release/`);
-console.log(`  - zk-client-gui.exe (standalone)`);
-console.log(`  - bundle/nsis/*-setup.exe (installer)`);
-console.log(`  - bundle/msi/*.msi (installer)`);
+console.log(`Artifacts: packages/zk-gui/src-tauri/src-tauri/target/release/bundle/`);
+if (process.platform === "darwin") {
+  console.log(`  - dmg/*.dmg (installer)`);
+  console.log(`  - macos/*.app (app bundle)`);
+} else if (process.platform === "win32") {
+  console.log(`  - nsis/*-setup.exe (installer)`);
+  console.log(`  - msi/*.msi (installer)`);
+} else {
+  console.log(`  - deb/*.deb, rpm/*.rpm, appimage/*.AppImage`);
+}
+console.log(`\nFor macOS/Linux/Windows release builds, push a v* tag or run the`);
+console.log(`"Build desktop app" GitHub Actions workflow (builds on all three OSes).`);
