@@ -1,10 +1,13 @@
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const BUN_TARGETS: Record<string, string> = {
-  "darwin-arm64": "bun-darwin-arm64",
-  "darwin-x64": "bun-darwin-x64",
-  "win32-x64": "bun-windows-x64",
+// Maps a Rust target triple to the matching Bun compile target.
+const RUST_TO_BUN: Record<string, string> = {
+  "aarch64-apple-darwin": "bun-darwin-arm64",
+  "x86_64-apple-darwin": "bun-darwin-x64",
+  "x86_64-pc-windows-msvc": "bun-windows-x64",
+  "x86_64-unknown-linux-gnu": "bun-linux-x64",
+  "aarch64-unknown-linux-gnu": "bun-linux-arm64",
 };
 
 function getRustHostTriple(): string {
@@ -22,19 +25,23 @@ function getRustHostTriple(): string {
   return match[1]!;
 }
 
-const key = `${process.platform}-${process.arch}`;
-const bunTarget = BUN_TARGETS[key];
+// Tauri sets TAURI_ENV_TARGET_TRIPLE for before-build commands, so
+// `tauri build --target <triple>` cross-arch builds pick the right sidecar.
+const rustTriple = process.env.TAURI_ENV_TARGET_TRIPLE ?? getRustHostTriple();
+const bunTarget = RUST_TO_BUN[rustTriple];
 
 if (!bunTarget) {
-  throw new Error(`Unsupported build platform: ${key}`);
+  throw new Error(
+    `No Bun compile target for Rust triple "${rustTriple}". ` +
+      `Supported: ${Object.keys(RUST_TO_BUN).join(", ")}`,
+  );
 }
 
-const rustTriple = getRustHostTriple();
-const ext = process.platform === "win32" ? ".exe" : "";
+const ext = rustTriple.includes("windows") ? ".exe" : "";
 const outDir = fileURLToPath(new URL("../src-tauri/binaries/", import.meta.url));
 const outfile = join(outDir, `zk-sidecar-${rustTriple}${ext}`);
 
-console.log(`Building sidecar for ${key} (${rustTriple}) -> ${outfile}`);
+console.log(`Building sidecar for ${rustTriple} (${bunTarget}) -> ${outfile}`);
 
 const result = await Bun.build({
   entrypoints: ["./src/sidecar.ts"],
