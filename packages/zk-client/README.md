@@ -12,15 +12,7 @@ npm install @graphland/zkteco
 bun add @graphland/zkteco
 ```
 
-Within this monorepo it is consumed as a workspace dependency:
-
-```json
-{
-  "dependencies": {
-    "@graphland/zkteco": "workspace:*"
-  }
-}
-```
+Ships as ESM with bundled TypeScript declarations. Prefer a GUI? The same engine powers the [Graphland ZKT Client desktop app](https://github.com/graphland-dev/zk-client-app/releases/latest) for macOS and Windows.
 
 ## Quick start
 
@@ -190,38 +182,20 @@ import { COMMANDS } from "@graphland/zkteco";
 const raw = await zk.executeCmd(COMMANDS.CMD_GET_VERSION, "");
 ```
 
-## Testing
+## Contributing
 
-Unit tests cover protocol encoding/decoding, auth, search helpers, and error types. No hardware required.
-
-```bash
-# From package directory
-bun test
-
-# From monorepo root
-bun run --filter @graphland/zkteco test
-```
+Development happens in the [zk-client-app monorepo](https://github.com/graphland-dev/zk-client-app) (this package lives in `packages/zk-client`). Requires [Bun](https://bun.sh):
 
 ```bash
+git clone https://github.com/graphland-dev/zk-client-app.git
+cd zk-client-app
+bun install
+bun run test         # unit tests — protocol, auth, search; no hardware required
 bun run typecheck
 ```
 
-## Project structure
-
-```
-packages/zk-client/
-├── src/
-│   ├── client.ts          # ZkClient — main API
-│   ├── transport/         # TCP & UDP transports
-│   ├── protocol.ts        # Packet encode/decode
-│   ├── auth.ts            # CommKey handshake
-│   ├── attendance.ts      # Punch/status labels
-│   ├── user-encoding.ts   # User create/update payloads
-│   └── ...
-├── tests/                 # Bun test suite
-└── README.md
-```
+Bug reports and feature requests: [GitHub issues](https://github.com/graphland-dev/zk-client-app/issues).
 
 ## License
 
-ISC
+[MIT](https://github.com/graphland-dev/zk-client-app/blob/main/packages/zk-client/LICENSE)
