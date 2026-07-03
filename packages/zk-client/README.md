@@ -1,31 +1,23 @@
-# @graphland/zk-client
+# @graphland/zkteco
 
 TypeScript client for ZKTeco biometric attendance devices. Connects over TCP (with UDP fallback), supports CommKey authentication, and provides a high-level API for users, attendance, and device management.
 
-Built with [Bun](https://bun.sh) — no runtime dependencies.
+Works on Node.js ≥ 18 and [Bun](https://bun.sh) — no runtime dependencies.
 
 ## Installation
 
-This package lives in a Bun workspace. From the monorepo root:
-
 ```bash
-bun install
+npm install @graphland/zkteco
+# or
+bun add @graphland/zkteco
 ```
 
-Or add as a workspace dependency:
-
-```json
-{
-  "dependencies": {
-    "@graphland/zk-client": "workspace:*"
-  }
-}
-```
+Ships as ESM with bundled TypeScript declarations. Prefer a GUI? The same engine powers the [Graphland ZKT Client desktop app](https://github.com/graphland-dev/zk-client-app/releases/latest) for macOS and Windows.
 
 ## Quick start
 
 ```typescript
-import { ZkClient } from "@graphland/zk-client";
+import { ZkClient } from "@graphland/zkteco";
 
 const zk = new ZkClient({
   ip: "192.168.0.153",
@@ -126,7 +118,7 @@ Each record includes `punch` and `punchLabel`:
 ```
 
 ```typescript
-import { isCheckIn, isCheckOut, getPunchLabel } from "@graphland/zk-client";
+import { isCheckIn, isCheckOut, getPunchLabel } from "@graphland/zkteco";
 
 records.filter((r) => isCheckIn(r.punch!));
 records.filter((r) => isCheckOut(r.punch!));
@@ -159,7 +151,7 @@ await zk.resetDevice(); // wipes users, fingerprints, logs, and settings
 ## Error handling
 
 ```typescript
-import { ZkError, ZkNotFoundError, ZkConnectionError } from "@graphland/zk-client";
+import { ZkError, ZkNotFoundError, ZkConnectionError } from "@graphland/zkteco";
 
 try {
   await zk.connect();
@@ -185,43 +177,25 @@ try {
 ## Low-level API
 
 ```typescript
-import { COMMANDS } from "@graphland/zk-client";
+import { COMMANDS } from "@graphland/zkteco";
 
 const raw = await zk.executeCmd(COMMANDS.CMD_GET_VERSION, "");
 ```
 
-## Testing
+## Contributing
 
-Unit tests cover protocol encoding/decoding, auth, search helpers, and error types. No hardware required.
-
-```bash
-# From package directory
-bun test
-
-# From monorepo root
-bun run --filter @graphland/zk-client test
-```
+Development happens in the [zk-client-app monorepo](https://github.com/graphland-dev/zk-client-app) (this package lives in `packages/zk-client`). Requires [Bun](https://bun.sh):
 
 ```bash
+git clone https://github.com/graphland-dev/zk-client-app.git
+cd zk-client-app
+bun install
+bun run test         # unit tests — protocol, auth, search; no hardware required
 bun run typecheck
 ```
 
-## Project structure
-
-```
-packages/zk-client/
-├── src/
-│   ├── client.ts          # ZkClient — main API
-│   ├── transport/         # TCP & UDP transports
-│   ├── protocol.ts        # Packet encode/decode
-│   ├── auth.ts            # CommKey handshake
-│   ├── attendance.ts      # Punch/status labels
-│   ├── user-encoding.ts   # User create/update payloads
-│   └── ...
-├── tests/                 # Bun test suite
-└── README.md
-```
+Bug reports and feature requests: [GitHub issues](https://github.com/graphland-dev/zk-client-app/issues).
 
 ## License
 
-ISC
+[MIT](https://github.com/graphland-dev/zk-client-app/blob/main/packages/zk-client/LICENSE)

@@ -13,10 +13,10 @@
     "build": "bun run scripts/build.mjs",
     "build:fast": "bun run scripts/build.mjs -- --skip-typecheck --skip-tests",
     "gui:build": "bun run --filter @graphland/zk-gui build:app",
-    "typecheck": "bun run --filter @graphland/zk-client typecheck && bun run --filter @graphland/zk-gui typecheck",
-    "test": "bun run --filter @graphland/zk-client test"
+    "typecheck": "bun run --filter @graphland/zkteco typecheck && bun run --filter @graphland/zk-gui typecheck",
+    "test": "bun run --filter @graphland/zkteco test"
   },
   "dependencies": {
-    "@graphland/zk-client": "workspace:*"
+    "@graphland/zkteco": "workspace:*"
   }
 }

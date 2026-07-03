@@ -3,7 +3,7 @@ import type {
   DeviceInfo,
   UserRole,
   ZkClientOptions,
-} from "@graphland/zk-client";
+} from "@graphland/zkteco";
 
 export type ClientConfig = Required<Pick<ZkClientOptions, "ip">> &
   Pick<

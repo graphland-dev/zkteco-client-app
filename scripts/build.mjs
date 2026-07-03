@@ -57,12 +57,12 @@ function run(label, command, commandArgs, options = {}) {
 console.log("Graphland ZKT Client — production build\n");
 
 if (!skipTypecheck) {
-  run("Typecheck zk-client", bun, ["run", "--filter", "@graphland/zk-client", "typecheck"]);
+  run("Typecheck zk-client", bun, ["run", "--filter", "@graphland/zkteco", "typecheck"]);
   run("Typecheck zk-gui", bun, ["run", "--filter", "@graphland/zk-gui", "typecheck"]);
 }
 
 if (!skipTests) {
-  run("Test zk-client", bun, ["run", "--filter", "@graphland/zk-client", "test"]);
+  run("Test zk-client", bun, ["run", "--filter", "@graphland/zkteco", "test"]);
 }
 
 const tauriArgs = ["x", "tauri", "build"];
