@@ -1,23 +1,23 @@
-# @graphland/zk-client
+# @graphland/zkteco
 
 TypeScript client for ZKTeco biometric attendance devices. Connects over TCP (with UDP fallback), supports CommKey authentication, and provides a high-level API for users, attendance, and device management.
 
-Built with [Bun](https://bun.sh) — no runtime dependencies.
+Works on Node.js ≥ 18 and [Bun](https://bun.sh) — no runtime dependencies.
 
 ## Installation
 
-This package lives in a Bun workspace. From the monorepo root:
-
 ```bash
-bun install
+npm install @graphland/zkteco
+# or
+bun add @graphland/zkteco
 ```
 
-Or add as a workspace dependency:
+Within this monorepo it is consumed as a workspace dependency:
 
 ```json
 {
   "dependencies": {
-    "@graphland/zk-client": "workspace:*"
+    "@graphland/zkteco": "workspace:*"
   }
 }
 ```
@@ -25,7 +25,7 @@ Or add as a workspace dependency:
 ## Quick start
 
 ```typescript
-import { ZkClient } from "@graphland/zk-client";
+import { ZkClient } from "@graphland/zkteco";
 
 const zk = new ZkClient({
   ip: "192.168.0.153",
@@ -126,7 +126,7 @@ Each record includes `punch` and `punchLabel`:
 ```
 
 ```typescript
-import { isCheckIn, isCheckOut, getPunchLabel } from "@graphland/zk-client";
+import { isCheckIn, isCheckOut, getPunchLabel } from "@graphland/zkteco";
 
 records.filter((r) => isCheckIn(r.punch!));
 records.filter((r) => isCheckOut(r.punch!));
@@ -159,7 +159,7 @@ await zk.resetDevice(); // wipes users, fingerprints, logs, and settings
 ## Error handling
 
 ```typescript
-import { ZkError, ZkNotFoundError, ZkConnectionError } from "@graphland/zk-client";
+import { ZkError, ZkNotFoundError, ZkConnectionError } from "@graphland/zkteco";
 
 try {
   await zk.connect();
@@ -185,7 +185,7 @@ try {
 ## Low-level API
 
 ```typescript
-import { COMMANDS } from "@graphland/zk-client";
+import { COMMANDS } from "@graphland/zkteco";
 
 const raw = await zk.executeCmd(COMMANDS.CMD_GET_VERSION, "");
 ```
@@ -199,7 +199,7 @@ Unit tests cover protocol encoding/decoding, auth, search helpers, and error typ
 bun test
 
 # From monorepo root
-bun run --filter @graphland/zk-client test
+bun run --filter @graphland/zkteco test
 ```
 
 ```bash

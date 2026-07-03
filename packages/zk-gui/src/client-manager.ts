@@ -1,5 +1,5 @@
-import { ZkClient, ZkConnectionError, ZkError, summarizeFingerprintTemplates } from "@graphland/zk-client";
-import type { AttendanceRecord, CreateUserInput, RealTimeLog, UpdateUserInput } from "@graphland/zk-client";
+import { ZkClient, ZkConnectionError, ZkError, summarizeFingerprintTemplates } from "@graphland/zkteco";
+import type { AttendanceRecord, CreateUserInput, RealTimeLog, UpdateUserInput } from "@graphland/zkteco";
 import type {
   ClientConfig,
   ConnectionStatus,

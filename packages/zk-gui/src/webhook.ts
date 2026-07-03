@@ -1,5 +1,5 @@
-import { getPunchLabel, getVerifyModeLabel } from "@graphland/zk-client";
-import type { AttendanceRecord, RealTimeLog } from "@graphland/zk-client";
+import { getPunchLabel, getVerifyModeLabel } from "@graphland/zkteco";
+import type { AttendanceRecord, RealTimeLog } from "@graphland/zkteco";
 import type { WebhookAttendanceItem, WebhookBody } from "./types.ts";
 
 export async function sendWebhookBatch(

@@ -4,6 +4,9 @@ node_modules/
 # Frontend build (Vite)
 packages/zk-gui/dist/
 
+# Library build (npm publish)
+packages/zk-client/dist/
+
 # Rust / Tauri build
 **/target/
 packages/zk-gui/src-tauri/src-tauri/

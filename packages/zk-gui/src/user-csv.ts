@@ -1,4 +1,4 @@
-import type { CreateUserInput, UpdateUserInput, UserRole, UserRoleName } from "@graphland/zk-client";
+import type { CreateUserInput, UpdateUserInput, UserRole, UserRoleName } from "@graphland/zkteco";
 
 export interface CsvUserRow {
   userId: string;

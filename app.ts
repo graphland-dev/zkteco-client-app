@@ -1,4 +1,4 @@
-import { ZkClient } from "@graphland/zk-client";
+import { ZkClient } from "@graphland/zkteco";
 
 const zk = new ZkClient({
   ip: "192.168.0.153",

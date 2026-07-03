@@ -1,17 +1,53 @@
 {
-  "name": "@graphland/zk-client",
-  "version": "1.0.0",
-  "description": "TypeScript ZKTeco attendance device client",
+  "name": "@graphland/zkteco",
+  "version": "0.1.0",
+  "description": "TypeScript client for ZKTeco biometric attendance devices — TCP/UDP protocol, users, attendance logs, real-time events",
   "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/graphland-dev/zk-client-app.git",
+    "directory": "packages/zk-client"
+  },
+  "homepage": "https://github.com/graphland-dev/zk-client-app/tree/main/packages/zk-client#readme",
+  "bugs": "https://github.com/graphland-dev/zk-client-app/issues",
+  "keywords": [
+    "zkteco",
+    "attendance",
+    "biometric",
+    "fingerprint",
+    "access-control",
+    "time-attendance",
+    "zklib"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "bun": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "prepublishOnly": "bun run build"
   },
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/node": "^26.0.1",
     "typescript": "^5.8.0"
   }
 }
