@@ -34,7 +34,7 @@ This is a Bun workspace monorepo:
 
 | Package | Description |
 |---------|-------------|
-| [`packages/zk-client`](packages/zk-client) | TypeScript client library for ZKTeco devices (TCP/UDP protocol, users, attendance). No runtime dependencies. See its [README](packages/zk-client/README.md) for the API. |
+| [`packages/zkteco`](packages/zkteco) | TypeScript client library for ZKTeco devices (TCP/UDP protocol, users, attendance). No runtime dependencies. See its [README](packages/zkteco/README.md) for the API. |
 | [`packages/zk-gui`](packages/zk-gui) | Desktop app: Tauri 2 shell + React frontend. Device communication runs in a Bun-compiled sidecar binary (`zk-sidecar`) that exposes a local HTTP API to the UI. |
 
 ## Development
@@ -50,7 +50,7 @@ bun run dev
 # Type-check everything
 bun run typecheck
 
-# Run zk-client unit tests
+# Run zkteco unit tests
 bun run test
 ```
 

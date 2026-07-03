@@ -22,10 +22,10 @@ import type {
   UpdateUserInput,
   User,
   UserSearchCriteria,
-  ZkClientOptions,
+  ZKTecoClientOptions,
 } from "./types.ts";
 
-export class ZkClient {
+export class ZKTecoClient {
   readonly ip: string;
   readonly port: number;
   readonly timeout: number;
@@ -38,10 +38,10 @@ export class ZkClient {
   private readonly tcp: TcpTransport;
   private readonly udp: UdpTransport;
 
-  constructor(options: ZkClientOptions);
+  constructor(options: ZKTecoClientOptions);
   constructor(ip: string, port?: number, timeout?: number, udpPort?: number);
   constructor(
-    ipOrOptions: string | ZkClientOptions,
+    ipOrOptions: string | ZKTecoClientOptions,
     port = 4370,
     timeout = 10000,
     udpPort = 4000,
@@ -485,4 +485,4 @@ export class ZkClient {
   }
 }
 
-export default ZkClient;
+export default ZKTecoClient;

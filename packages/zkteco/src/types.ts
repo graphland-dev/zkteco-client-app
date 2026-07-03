@@ -100,7 +100,7 @@ export interface RealTimeLog {
   punch?: number;
 }
 
-export interface ZkClientOptions {
+export interface ZKTecoClientOptions {
   ip: string;
   port?: number;
   timeout?: number;

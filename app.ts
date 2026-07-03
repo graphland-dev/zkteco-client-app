@@ -1,6 +1,6 @@
-import { ZkClient } from "@graphland/zkteco";
+import { ZKTecoClient } from "@graphland/zkteco";
 
-const zk = new ZkClient({
+const zk = new ZKTecoClient({
   ip: "192.168.0.153",
   port: 6523,
   timeout: 10000,

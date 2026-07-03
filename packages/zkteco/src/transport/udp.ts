@@ -1,72 +1,67 @@
-import net from "node:net";
+import dgram from "node:dgram";
 import { makeCommKey, getReplyCommandId } from "../auth.ts";
 import {
   COMMANDS,
   MAX_CHUNK,
-  RECORD_PACKET_SIZE_TCP,
+  RECORD_PACKET_SIZE_UDP,
   REQUEST_DATA,
-  USER_PACKET_SIZE_TCP,
+  USER_PACKET_SIZE_UDP,
 } from "../constants.ts";
 import {
-  checkNotEventTCP,
-  createTCPHeader,
+  checkNotEventUDP,
+  createUDPHeader,
   decodeDeviceTime,
-  decodeTCPHeader,
+  decodeUDPHeader,
   encodeDeviceTime,
   exportErrorMessage,
   assertAckReply,
-  decodeRecordRealTimeLog52,
+  decodeRecordRealTimeLog18,
   parseAttendancesFromBuffer,
   parseUsersFromBuffer,
-  removeTcpHeader,
 } from "../protocol.ts";
-import type {
-  DeviceInfo,
-  ReadBufferResult,
-  RealTimeLog,
-  Transport,
-} from "../types.ts";
+import type { DeviceInfo, ReadBufferResult, RealTimeLog, Transport } from "../types.ts";
 
-export class TcpTransport implements Transport {
+export class UdpTransport implements Transport {
   readonly ip: string;
-  readonly userPacketSize = USER_PACKET_SIZE_TCP;
+  readonly userPacketSize = USER_PACKET_SIZE_UDP;
   readonly port: number;
   readonly timeout: number;
+  readonly inport: number;
   readonly commKey: number;
 
   private sessionId = 0;
   private replyId = 0;
-  private socket: net.Socket | null = null;
+  private socket: dgram.Socket | null = null;
 
-  constructor(ip: string, port: number, timeout: number, commKey = 0) {
+  constructor(ip: string, port: number, timeout: number, inport: number, commKey = 0) {
     this.ip = ip;
     this.port = port;
     this.timeout = timeout;
+    this.inport = inport;
     this.commKey = commKey;
   }
 
   private createSocket(
     onError?: (error: Error) => void,
     onClose?: () => void,
-  ): Promise<net.Socket> {
+  ): Promise<dgram.Socket> {
     return new Promise((resolve, reject) => {
-      const socket = new net.Socket();
+      const socket = dgram.createSocket("udp4");
       this.socket = socket;
+      socket.setMaxListeners(Infinity);
 
       socket.once("error", (err) => {
         onError?.(err);
         reject(err);
       });
 
-      socket.once("connect", () => resolve(socket));
-
-      socket.once("close", () => {
+      socket.on("close", () => {
         this.socket = null;
         onClose?.();
       });
 
-      if (this.timeout) socket.setTimeout(this.timeout);
-      socket.connect(this.port, this.ip);
+      socket.once("listening", () => resolve(socket));
+      socket.bind(this.inport);
     });
   }
 
@@ -76,8 +71,8 @@ export class TcpTransport implements Transport {
         resolve();
         return;
       }
-      this.socket.removeAllListeners("data");
-      this.socket.end(() => resolve());
+      this.socket.removeAllListeners("message");
+      this.socket.close(() => resolve());
       setTimeout(() => resolve(), 2000);
     });
   }
@@ -87,12 +82,12 @@ export class TcpTransport implements Transport {
       if (!this.socket) return reject(new Error("Socket is not connected"));
 
       let timer: ReturnType<typeof setTimeout> | null = null;
-      this.socket.once("data", (data: Buffer) => {
+      this.socket.once("message", (data) => {
         if (timer) clearTimeout(timer);
         resolve(data);
       });
 
-      this.socket.write(msg, (err) => {
+      this.socket.send(msg, 0, msg.length, this.port, this.ip, (err) => {
         if (err) return reject(err);
         if (this.timeout) {
           timer = setTimeout(
@@ -109,51 +104,35 @@ export class TcpTransport implements Transport {
       if (!this.socket) return reject(new Error("Socket is not connected"));
 
       let timer: ReturnType<typeof setTimeout> | null = null;
-      let replyBuffer = Buffer.alloc(0);
 
       const finish = (data: Buffer) => {
-        this.socket?.removeListener("data", onData);
         if (timer) clearTimeout(timer);
+        this.socket?.removeListener("message", onMessage);
         resolve(data);
       };
 
-      const onData = (data: Buffer) => {
-        replyBuffer = Buffer.concat([replyBuffer, data]);
-        if (checkNotEventTCP(data)) return;
-
+      const onMessage = (data: Buffer) => {
+        if (checkNotEventUDP(data)) return;
         if (timer) clearTimeout(timer);
-        const header = decodeTCPHeader(replyBuffer.subarray(0, 16));
-
-        if (header.commandId === COMMANDS.CMD_DATA) {
-          timer = setTimeout(() => finish(replyBuffer), 1000);
-        } else {
-          timer = setTimeout(
-            () => reject(new Error("TIMEOUT_ON_RECEIVING_REQUEST_DATA")),
-            this.timeout,
-          );
-          const packetLength = data.readUIntLE(4, 2);
-          if (packetLength > 8) finish(data);
-        }
+        timer = setTimeout(
+          () => reject(new Error("TIMEOUT_ON_RECEIVING_REQUEST_DATA")),
+          this.timeout,
+        );
+        if (data.length >= 13) finish(data);
       };
 
-      this.socket.on("data", onData);
-      this.socket.write(msg, (err) => {
+      this.socket.on("message", onMessage);
+      this.socket.send(msg, 0, msg.length, this.port, this.ip, (err) => {
         if (err) reject(err);
         timer = setTimeout(
-          () =>
-            reject(
-              new Error("TIMEOUT_IN_RECEIVING_RESPONSE_AFTER_REQUESTING_DATA"),
-            ),
+          () => reject(new Error("TIMEOUT_IN_RECEIVING_RESPONSE_AFTER_REQUESTING_DATA")),
           this.timeout,
         );
       });
     });
   }
 
-  async executeCmd(
-    command: number,
-    data: Buffer | string = "",
-  ): Promise<Buffer> {
+  async executeCmd(command: number, data: Buffer | string = ""): Promise<Buffer> {
     if (command === COMMANDS.CMD_CONNECT) {
       this.sessionId = 0;
       this.replyId = 0;
@@ -161,21 +140,20 @@ export class TcpTransport implements Transport {
       this.replyId++;
     }
 
-    const buf = createTCPHeader(command, this.sessionId, this.replyId, data);
+    const buf = createUDPHeader(command, this.sessionId, this.replyId, data);
     const reply = await this.writeMessage(
       buf,
       command === COMMANDS.CMD_CONNECT || command === COMMANDS.CMD_EXIT,
     );
-    const payload = removeTcpHeader(reply);
     const skipValidation =
       command === COMMANDS.CMD_CONNECT || command === COMMANDS.CMD_AUTH;
     if (!skipValidation) {
-      assertAckReply(payload, exportErrorMessage(command));
+      assertAckReply(reply, exportErrorMessage(command));
     }
-    if (command === COMMANDS.CMD_CONNECT && payload.length >= 6) {
-      this.sessionId = payload.readUInt16LE(4);
+    if (command === COMMANDS.CMD_CONNECT && reply.length >= 6) {
+      this.sessionId = reply.readUInt16LE(4);
     }
-    return payload;
+    return reply;
   }
 
   private sendChunkRequest(start: number, size: number): void {
@@ -183,13 +161,8 @@ export class TcpTransport implements Transport {
     const reqData = Buffer.alloc(8);
     reqData.writeUInt32LE(start, 0);
     reqData.writeUInt32LE(size, 4);
-    const buf = createTCPHeader(
-      COMMANDS.CMD_DATA_RDY,
-      this.sessionId,
-      this.replyId,
-      reqData,
-    );
-    this.socket?.write(buf);
+    const buf = createUDPHeader(COMMANDS.CMD_DATA_RDY, this.sessionId, this.replyId, reqData);
+    this.socket?.send(buf, 0, buf.length, this.port, this.ip);
   }
 
   private readWithBuffer(
@@ -200,19 +173,14 @@ export class TcpTransport implements Transport {
       if (!this.socket) return reject(new Error("Socket is not connected"));
 
       this.replyId++;
-      const buf = createTCPHeader(
-        COMMANDS.CMD_DATA_WRRQ,
-        this.sessionId,
-        this.replyId,
-        reqData,
-      );
+      const buf = createUDPHeader(COMMANDS.CMD_DATA_WRRQ, this.sessionId, this.replyId, reqData);
 
       this.requestData(buf)
         .then((reply) => {
-          const header = decodeTCPHeader(reply.subarray(0, 16));
+          const header = decodeUDPHeader(reply.subarray(0, 8));
 
           if (header.commandId === COMMANDS.CMD_DATA) {
-            resolve({ data: reply.subarray(16) });
+            resolve({ data: reply.subarray(8) });
             return;
           }
 
@@ -220,76 +188,57 @@ export class TcpTransport implements Transport {
             header.commandId !== COMMANDS.CMD_ACK_OK &&
             header.commandId !== COMMANDS.CMD_PREPARE_DATA
           ) {
-            reject(
-              new Error(
-                `ERROR_IN_UNHANDLE_CMD ${exportErrorMessage(header.commandId)}`,
-              ),
-            );
+            reject(new Error(`ERROR_IN_UNHANDLE_CMD ${exportErrorMessage(header.commandId)}`));
             return;
           }
 
-          const recvData = reply.subarray(16);
+          const recvData = reply.subarray(8);
           const size = recvData.readUIntLE(1, 4);
           const remain = size % MAX_CHUNK;
           const numberChunks = Math.round(size - remain) / MAX_CHUNK;
-          let totalPackets = numberChunks + (remain > 0 ? 1 : 0);
-          let replyData = Buffer.alloc(0);
           let totalBuffer = Buffer.alloc(0);
-          let realTotalBuffer = Buffer.alloc(0);
-          const timeout = 10000;
+          const timeout = 3000;
 
           let timer = setTimeout(() => {
-            finish(replyData, new Error("TIMEOUT WHEN RECEIVING PACKET"));
+            finish(totalBuffer, new Error("TIMEOUT WHEN RECEIVING PACKET"));
           }, timeout);
 
           const finish = (data: Buffer, err: Error | null = null) => {
+            this.socket?.removeListener("message", onMessage);
             if (timer) clearTimeout(timer);
             resolve({ data, err });
           };
 
-          const onData = (packet: Buffer) => {
-            if (checkNotEventTCP(packet)) return;
+          const onMessage = (packet: Buffer) => {
+            if (checkNotEventUDP(packet)) return;
             if (timer) clearTimeout(timer);
             timer = setTimeout(
               () =>
                 finish(
-                  replyData,
-                  new Error(`TIME OUT !! ${totalPackets} PACKETS REMAIN !`),
+                  totalBuffer,
+                  new Error(`TIMEOUT !! ${((size - totalBuffer.length) / size) * 100}% REMAIN !`),
                 ),
               timeout,
             );
 
-            totalBuffer = Buffer.concat([totalBuffer, packet]);
-            const packetLength = totalBuffer.readUIntLE(4, 2);
-            if (totalBuffer.length >= 8 + packetLength) {
-              realTotalBuffer = Buffer.concat([
-                realTotalBuffer,
-                totalBuffer.subarray(16, 8 + packetLength),
-              ]);
-              totalBuffer = totalBuffer.subarray(8 + packetLength);
-
-              if (
-                (totalPackets > 1 &&
-                  realTotalBuffer.length === MAX_CHUNK + 8) ||
-                (totalPackets === 1 && realTotalBuffer.length === remain + 8)
-              ) {
-                replyData = Buffer.concat([
-                  replyData,
-                  realTotalBuffer.subarray(8),
-                ]);
-                totalBuffer = Buffer.alloc(0);
-                realTotalBuffer = Buffer.alloc(0);
-                totalPackets -= 1;
-                onProgress?.(replyData.length, size);
-                if (totalPackets <= 0) finish(replyData);
-              }
+            const pktHeader = decodeUDPHeader(packet);
+            if (pktHeader.commandId === COMMANDS.CMD_DATA) {
+              totalBuffer = Buffer.concat([totalBuffer, packet.subarray(8)]);
+              onProgress?.(totalBuffer.length, size);
+            } else if (pktHeader.commandId === COMMANDS.CMD_ACK_OK && totalBuffer.length === size) {
+              finish(totalBuffer);
+            } else if (
+              pktHeader.commandId !== COMMANDS.CMD_PREPARE_DATA &&
+              pktHeader.commandId !== COMMANDS.CMD_ACK_OK
+            ) {
+              finish(
+                Buffer.alloc(0),
+                new Error(`ERROR_IN_UNHANDLE_CMD ${exportErrorMessage(pktHeader.commandId)}`),
+              );
             }
           };
 
-          this.socket!.once("close", () => {
-            finish(replyData, new Error("Socket is disconnected unexpectedly"));
-          });
-          this.socket!.on("data", onData);
+          this.socket!.on("message", onMessage);
 
           for (let i = 0; i <= numberChunks; i++) {
             if (i === numberChunks) {
@@ -310,10 +259,7 @@ export class TcpTransport implements Transport {
     return result;
   }
 
-  async connect(
-    onError?: (error: Error) => void,
-    onClose?: () => void,
-  ): Promise<void> {
+  async connect(onError?: (error: Error) => void, onClose?: () => void): Promise<void> {
     await this.createSocket(onError, onClose);
     const reply = await this.executeCmd(COMMANDS.CMD_CONNECT, "");
     if (!reply || reply.length < 6) {
@@ -330,7 +276,7 @@ export class TcpTransport implements Transport {
       );
       if (getReplyCommandId(authReply) === COMMANDS.CMD_ACK_UNAUTH) {
         throw new Error(
-          "Invalid communication key (commKey). Set the correct commKey in ZkClient options.",
+          "Invalid communication key (commKey). Set the correct commKey in ZKTecoClient options.",
         );
       }
       assertAckReply(authReply, "CMD_AUTH");
@@ -355,10 +301,7 @@ export class TcpTransport implements Transport {
   }
 
   async disableDevice(): Promise<Buffer> {
-    return this.executeCmd(
-      COMMANDS.CMD_DISABLEDEVICE,
-      REQUEST_DATA.DISABLE_DEVICE,
-    );
+    return this.executeCmd(COMMANDS.CMD_DISABLEDEVICE, REQUEST_DATA.DISABLE_DEVICE);
   }
 
   async enableDevice(): Promise<Buffer> {
@@ -452,26 +395,26 @@ export class TcpTransport implements Transport {
   getRealTimeLogs(callback: (log: RealTimeLog) => void): void {
     if (!this.socket) return;
     this.replyId++;
-    const buf = createTCPHeader(
+    const buf = createUDPHeader(
       COMMANDS.CMD_REG_EVENT,
       this.sessionId,
       this.replyId,
-      Buffer.from([0x01, 0x00, 0x00, 0x00]),
+      REQUEST_DATA.GET_REAL_TIME_EVENT,
     );
-    this.socket.write(buf);
-    if (this.socket.listenerCount("data") === 0) {
-      this.socket.on("data", (data: Buffer) => {
-        if (!checkNotEventTCP(data) || data.length <= 16) return;
-        callback(decodeRecordRealTimeLog52(data));
+    this.socket.send(buf, 0, buf.length, this.port, this.ip);
+    if (this.socket.listenerCount("message") < 2) {
+      this.socket.on("message", (data) => {
+        if (!checkNotEventUDP(data) || data.length !== 18) return;
+        callback(decodeRecordRealTimeLog18(data));
       });
     }
   }
 
   parseUsers(data: Buffer) {
-    return parseUsersFromBuffer(data, USER_PACKET_SIZE_TCP, this.ip);
+    return parseUsersFromBuffer(data, USER_PACKET_SIZE_UDP, this.ip);
   }
 
   parseAttendances(data: Buffer) {
-    return parseAttendancesFromBuffer(data, RECORD_PACKET_SIZE_TCP, this.ip);
+    return parseAttendancesFromBuffer(data, RECORD_PACKET_SIZE_UDP, this.ip);
   }
 }

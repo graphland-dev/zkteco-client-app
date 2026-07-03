@@ -17,9 +17,9 @@ Ships as ESM with bundled TypeScript declarations. Prefer a GUI? The same engine
 ## Quick start
 
 ```typescript
-import { ZkClient } from "@graphland/zkteco";
+import { ZKTecoClient } from "@graphland/zkteco";
 
-const zk = new ZkClient({
+const zk = new ZKTecoClient({
   ip: "192.168.0.153",
   port: 6523,        // device TCP port (default: 4370)
   timeout: 10000,
@@ -184,7 +184,7 @@ const raw = await zk.executeCmd(COMMANDS.CMD_GET_VERSION, "");
 
 ## Contributing
 
-Development happens in the [zk-client-app monorepo](https://github.com/graphland-dev/zk-client-app) (this package lives in `packages/zk-client`). Requires [Bun](https://bun.sh):
+Development happens in the [zk-client-app monorepo](https://github.com/graphland-dev/zk-client-app) (this package lives in `packages/zkteco`). Requires [Bun](https://bun.sh):
 
 ```bash
 git clone https://github.com/graphland-dev/zk-client-app.git
@@ -198,4 +198,4 @@ Bug reports and feature requests: [GitHub issues](https://github.com/graphland-d
 
 ## License
 
-[MIT](https://github.com/graphland-dev/zk-client-app/blob/main/packages/zk-client/LICENSE)
+[MIT](https://github.com/graphland-dev/zk-client-app/blob/main/packages/zkteco/LICENSE)
