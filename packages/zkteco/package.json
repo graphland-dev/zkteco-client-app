@@ -7,9 +7,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/graphland-dev/zk-client-app.git",
-    "directory": "packages/zk-client"
+    "directory": "packages/zkteco"
   },
-  "homepage": "https://github.com/graphland-dev/zk-client-app/tree/main/packages/zk-client#readme",
+  "homepage": "https://github.com/graphland-dev/zk-client-app/tree/main/packages/zkteco#readme",
   "bugs": "https://github.com/graphland-dev/zk-client-app/issues",
   "keywords": [
     "zkteco",

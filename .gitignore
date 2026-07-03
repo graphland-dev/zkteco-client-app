@@ -5,7 +5,7 @@ node_modules/
 packages/zk-gui/dist/
 
 # Library build (npm publish)
-packages/zk-client/dist/
+packages/zkteco/dist/
 
 # Rust / Tauri build
 **/target/

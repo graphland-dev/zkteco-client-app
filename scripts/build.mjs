@@ -26,7 +26,7 @@ Usage:
 
 Options:
   --skip-typecheck   Skip TypeScript checks
-  --skip-tests       Skip zk-client unit tests
+  --skip-tests       Skip zkteco unit tests
   --debug            Create a debug Tauri bundle (faster, larger)
   -h, --help         Show this help
 `);
@@ -57,12 +57,12 @@ function run(label, command, commandArgs, options = {}) {
 console.log("Graphland ZKT Client — production build\n");
 
 if (!skipTypecheck) {
-  run("Typecheck zk-client", bun, ["run", "--filter", "@graphland/zkteco", "typecheck"]);
+  run("Typecheck zkteco", bun, ["run", "--filter", "@graphland/zkteco", "typecheck"]);
   run("Typecheck zk-gui", bun, ["run", "--filter", "@graphland/zk-gui", "typecheck"]);
 }
 
 if (!skipTests) {
-  run("Test zk-client", bun, ["run", "--filter", "@graphland/zkteco", "test"]);
+  run("Test zkteco", bun, ["run", "--filter", "@graphland/zkteco", "test"]);
 }
 
 const tauriArgs = ["x", "tauri", "build"];
