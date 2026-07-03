@@ -7,7 +7,7 @@ export {
   isCheckOut,
 } from "./attendance.ts";
 export { makeCommKey } from "./auth.ts";
-export { ZkClient, ZkClient as default } from "./client.ts";
+export { ZKTecoClient, ZKTecoClient as default } from "./client.ts";
 export { COMMANDS, REQUEST_DATA } from "./constants.ts";
 export { ZkError, ZkNotFoundError, ZkConnectionError, ERROR_TYPES } from "./errors.ts";
 export {
@@ -39,5 +39,5 @@ export type {
   UserSearchCriteria,
   UserRole,
   UserRoleName,
-  ZkClientOptions,
+  ZKTecoClientOptions,
 } from "./types.ts";

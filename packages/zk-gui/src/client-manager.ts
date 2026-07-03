@@ -1,4 +1,4 @@
-import { ZkClient, ZkConnectionError, ZkError, summarizeFingerprintTemplates } from "@graphland/zkteco";
+import { ZKTecoClient, ZkConnectionError, ZkError, summarizeFingerprintTemplates } from "@graphland/zkteco";
 import type { AttendanceRecord, CreateUserInput, RealTimeLog, UpdateUserInput } from "@graphland/zkteco";
 import type {
   ClientConfig,
@@ -53,7 +53,7 @@ function toClientOptions(config: ClientConfig) {
 }
 
 export class ClientManager {
-  private client: ZkClient | null = null;
+  private client: ZKTecoClient | null = null;
   private activeConfig: ClientConfig | null = null;
   private deviceInfo: ConnectionStatus["deviceInfo"] = null;
   private lastError: string | null = null;
@@ -206,7 +206,7 @@ export class ClientManager {
     this.lastError = null;
     this.setWebhookFromConfig(config);
 
-    const client = new ZkClient(toClientOptions(config));
+    const client = new ZKTecoClient(toClientOptions(config));
     try {
       await client.connect({
         onError: (error) => {
@@ -360,7 +360,7 @@ export class ClientManager {
     }
   }
 
-  private requireClient(): ZkClient {
+  private requireClient(): ZKTecoClient {
     if (!this.client?.isConnected) {
       throw new Error("Not connected to a device");
     }
@@ -509,7 +509,7 @@ export class ClientManager {
     }
 
     const started = performance.now();
-    const client = new ZkClient(toClientOptions(config));
+    const client = new ZKTecoClient(toClientOptions(config));
 
     try {
       await client.connect();

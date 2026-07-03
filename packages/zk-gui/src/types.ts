@@ -2,12 +2,12 @@ import type {
   ConnectionType,
   DeviceInfo,
   UserRole,
-  ZkClientOptions,
+  ZKTecoClientOptions,
 } from "@graphland/zkteco";
 
-export type ClientConfig = Required<Pick<ZkClientOptions, "ip">> &
+export type ClientConfig = Required<Pick<ZKTecoClientOptions, "ip">> &
   Pick<
-    ZkClientOptions,
+    ZKTecoClientOptions,
     "port" | "timeout" | "udpPort" | "commKey" | "openDoorDelaySec"
   > & {
     webhookUrl?: string;

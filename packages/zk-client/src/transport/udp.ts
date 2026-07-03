@@ -276,7 +276,7 @@ export class UdpTransport implements Transport {
       );
       if (getReplyCommandId(authReply) === COMMANDS.CMD_ACK_UNAUTH) {
         throw new Error(
-          "Invalid communication key (commKey). Set the correct commKey in ZkClient options.",
+          "Invalid communication key (commKey). Set the correct commKey in ZKTecoClient options.",
         );
       }
       assertAckReply(authReply, "CMD_AUTH");

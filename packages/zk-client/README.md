@@ -17,9 +17,9 @@ Ships as ESM with bundled TypeScript declarations. Prefer a GUI? The same engine
 ## Quick start
 
 ```typescript
-import { ZkClient } from "@graphland/zkteco";
+import { ZKTecoClient } from "@graphland/zkteco";
 
-const zk = new ZkClient({
+const zk = new ZKTecoClient({
   ip: "192.168.0.153",
   port: 6523,        // device TCP port (default: 4370)
   timeout: 10000,
