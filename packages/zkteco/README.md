@@ -78,6 +78,33 @@ await zk.updateUser("99", { name: "Jane Updated" });
 await zk.deleteUser("99"); // or deleteUser(uid)
 ```
 
+### Bulk create
+
+For imports, prefer `createUsers` over calling `createUser` in a loop. It
+downloads the user table once (duplicate checks + uid allocation) and writes
+in device batches — one disable → write → refresh → enable cycle per batch
+instead of per user:
+
+```typescript
+const { created, failed } = await zk.createUsers(
+  [
+    { userId: "201", name: "Alice" },
+    { userId: "202", name: "Bob" },
+    // ...hundreds more
+  ],
+  {
+    batchSize: 5, // default
+    onProgress: (done, total) => console.log(`${done}/${total}`),
+  },
+);
+
+console.log(`Created ${created.length}, failed ${failed.length}`);
+for (const f of failed) console.error(f.input.userId, f.error);
+```
+
+A failed user doesn't abort the run — it's reported in `failed` and the
+remaining users continue.
+
 ## Attendance
 
 The device returns **all** attendance logs in one download. Per-user methods filter client-side.

@@ -13,6 +13,8 @@ import type {
   AttendanceRecord,
   ConnectCallbacks,
   CreateUserInput,
+  CreateUsersOptions,
+  CreateUsersResult,
   DeleteAttendanceCriteria,
   DeviceInfo,
   FingerprintTemplateIndex,
@@ -288,6 +290,101 @@ export class ZKTecoClient {
         cardno: input.cardno,
         userId: input.userId,
       };
+    });
+  }
+
+  /**
+   * Create many users efficiently. Downloads the user table once (for
+   * duplicate checks and uid allocation), then writes users in batches:
+   * each batch shares a single disable → write×N → refresh → enable cycle
+   * instead of one cycle per user. Failures are collected per user and
+   * do not abort the remaining batches.
+   */
+  async createUsers(
+    inputs: CreateUserInput[],
+    options: CreateUsersOptions = {},
+  ): Promise<CreateUsersResult> {
+    return this.run("createUsers", async () => {
+      const batchSize = Math.max(1, options.batchSize ?? 5);
+      const created: User[] = [];
+      const failed: CreateUsersResult["failed"] = [];
+      if (inputs.length === 0) return { created, failed };
+
+      let done = 0;
+      const progress = () => options.onProgress?.(++done, inputs.length);
+
+      const existing = await this.getUsers();
+      const takenIds = new Set(existing.map((user) => user.userId));
+      const takenUids = new Set(existing.map((user) => user.uid));
+      let nextUid = existing.reduce((max, user) => Math.max(max, user.uid), 0) + 1;
+
+      type Prepared = { input: CreateUserInput; user: User; payload: Buffer };
+      const prepared: Prepared[] = [];
+      for (const input of inputs) {
+        try {
+          if (takenIds.has(input.userId)) {
+            throw new Error(`User already exists with id ${input.userId}`);
+          }
+          if (input.uid !== undefined && takenUids.has(input.uid)) {
+            throw new Error(`User already exists with uid ${input.uid}`);
+          }
+          const uid = input.uid ?? nextUid++;
+          const payload = encodeUser(
+            {
+              uid,
+              userId: input.userId,
+              name: input.name,
+              password: input.password,
+              role: input.role,
+              cardno: input.cardno,
+              group: input.group,
+              enabled: input.enabled,
+            },
+            this.transport!.userPacketSize,
+          );
+          takenIds.add(input.userId);
+          takenUids.add(uid);
+          prepared.push({
+            input,
+            payload,
+            user: {
+              uid,
+              role: typeof input.role === "number" ? input.role : 0,
+              name: input.name,
+              password: input.password,
+              cardno: input.cardno,
+              userId: input.userId,
+            },
+          });
+        } catch (err) {
+          failed.push({ input, error: err instanceof Error ? err.message : String(err) });
+          progress();
+        }
+      }
+
+      for (let i = 0; i < prepared.length; i += batchSize) {
+        const batch = prepared.slice(i, i + batchSize);
+        await this.transport!.disableDevice();
+        try {
+          for (const item of batch) {
+            try {
+              await this.transport!.setUser(item.payload);
+              created.push(item.user);
+            } catch (err) {
+              failed.push({
+                input: item.input,
+                error: err instanceof Error ? err.message : String(err),
+              });
+            }
+            progress();
+          }
+          await this.transport!.refreshData();
+        } finally {
+          await this.transport!.enableDevice();
+        }
+      }
+
+      return { created, failed };
     });
   }
 

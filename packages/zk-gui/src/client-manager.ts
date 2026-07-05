@@ -458,31 +458,43 @@ export class ClientManager {
     const existing = await client.getUsers();
     const existingIds = new Set(existing.map((user) => user.userId));
 
-    let created = 0;
     let updated = 0;
     let skipped = 0;
     let failed = 0;
     const errors: string[] = [];
+    const toCreate: typeof rows = [];
 
     for (const row of rows) {
-      try {
-        if (existingIds.has(row.userId)) {
-          if (options.updateExisting) {
-            await client.updateUser(row.userId, toUpdateUserInput(row));
-            updated++;
-          } else {
-            skipped++;
-          }
-          continue;
-        }
-        await client.createUser(toCreateUserInput(row));
+      if (!existingIds.has(row.userId)) {
         existingIds.add(row.userId);
-        created++;
+        toCreate.push(row);
+        continue;
+      }
+      if (!options.updateExisting) {
+        skipped++;
+        continue;
+      }
+      try {
+        await client.updateUser(row.userId, toUpdateUserInput(row));
+        updated++;
       } catch (err) {
         failed++;
         if (errors.length < 10) {
           errors.push(`${row.userId}: ${formatError(err)}`);
         }
+      }
+    }
+
+    // Writes in device batches of 5: one disable/refresh/enable cycle and
+    // a single user-table download for the whole import instead of per user.
+    const result = await client.createUsers(toCreate.map(toCreateUserInput), {
+      batchSize: 5,
+    });
+    const created = result.created.length;
+    failed += result.failed.length;
+    for (const failure of result.failed) {
+      if (errors.length < 10) {
+        errors.push(`${failure.input.userId}: ${failure.error}`);
       }
     }
 

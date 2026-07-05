@@ -29,6 +29,8 @@ export type {
   ConnectionType,
   ConnectCallbacks,
   CreateUserInput,
+  CreateUsersOptions,
+  CreateUsersResult,
   DeleteAttendanceCriteria,
   DeviceInfo,
   FingerprintTemplateIndex,
