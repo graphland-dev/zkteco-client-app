@@ -132,7 +132,13 @@ export class TcpTransport implements Transport {
             this.timeout,
           );
           const packetLength = data.readUIntLE(4, 2);
-          if (packetLength > 8) finish(data);
+          if (packetLength > 8) {
+            finish(data);
+          } else if (replyBuffer.length >= 8 + packetLength) {
+            // Header-only reply (e.g. empty dataset on some firmwares,
+            // observed as command id 4991): nothing else will arrive.
+            finish(replyBuffer);
+          }
         }
       };
 
@@ -216,6 +222,22 @@ export class TcpTransport implements Transport {
             return;
           }
 
+          const recvData = reply.subarray(16);
+
+          // Header-only reply with no size payload: the dataset is empty.
+          // Some firmwares answer CMD_DATA_WRRQ on an empty table with an
+          // undocumented ack (observed: 4991) instead of PREPARE_DATA.
+          if (
+            recvData.length < 5 &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR_CMD &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR_INIT &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR_DATA
+          ) {
+            resolve({ data: Buffer.alloc(0) });
+            return;
+          }
+
           if (
             header.commandId !== COMMANDS.CMD_ACK_OK &&
             header.commandId !== COMMANDS.CMD_PREPARE_DATA
@@ -228,7 +250,6 @@ export class TcpTransport implements Transport {
             return;
           }
 
-          const recvData = reply.subarray(16);
           const size = recvData.readUIntLE(1, 4);
           const remain = size % MAX_CHUNK;
           const numberChunks = Math.round(size - remain) / MAX_CHUNK;

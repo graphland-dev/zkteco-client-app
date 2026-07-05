@@ -29,6 +29,18 @@ export interface CreateUserInput {
   enabled?: boolean;
 }
 
+export interface CreateUsersOptions {
+  /** Users written per device batch (disable → write → refresh → enable). Default 5. */
+  batchSize?: number;
+  /** Called after each user is attempted (created or failed). */
+  onProgress?: (done: number, total: number) => void;
+}
+
+export interface CreateUsersResult {
+  created: User[];
+  failed: { input: CreateUserInput; error: string }[];
+}
+
 export interface UpdateUserInput {
   name?: string;
   password?: string;
