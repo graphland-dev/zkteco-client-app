@@ -118,7 +118,13 @@ export class UdpTransport implements Transport {
           () => reject(new Error("TIMEOUT_ON_RECEIVING_REQUEST_DATA")),
           this.timeout,
         );
-        if (data.length >= 13) finish(data);
+        if (data.length >= 13) {
+          finish(data);
+        } else if (data.length >= 8) {
+          // Header-only datagram (e.g. empty dataset on some firmwares,
+          // observed as command id 4991 over TCP): nothing else follows.
+          finish(data);
+        }
       };
 
       this.socket.on("message", onMessage);
@@ -184,6 +190,22 @@ export class UdpTransport implements Transport {
             return;
           }
 
+          const recvData = reply.subarray(8);
+
+          // Header-only reply with no size payload: the dataset is empty.
+          // Some firmwares answer CMD_DATA_WRRQ on an empty table with an
+          // undocumented ack instead of PREPARE_DATA.
+          if (
+            recvData.length < 5 &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR_CMD &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR_INIT &&
+            header.commandId !== COMMANDS.CMD_ACK_ERROR_DATA
+          ) {
+            resolve({ data: Buffer.alloc(0) });
+            return;
+          }
+
           if (
             header.commandId !== COMMANDS.CMD_ACK_OK &&
             header.commandId !== COMMANDS.CMD_PREPARE_DATA
@@ -192,7 +214,6 @@ export class UdpTransport implements Transport {
             return;
           }
 
-          const recvData = reply.subarray(8);
           const size = recvData.readUIntLE(1, 4);
           const remain = size % MAX_CHUNK;
           const numberChunks = Math.round(size - remain) / MAX_CHUNK;
