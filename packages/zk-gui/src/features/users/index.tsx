@@ -6,13 +6,24 @@ import { Label } from "@/components/ui/label";
 import { PageHeader } from "@/components/ui/page-header";
 import { useConfirmation } from "@/hooks/use-confirm";
 import { useUsersSearchParams } from "@/hooks/use-url-search-params";
+import { DEMO_MODE_ENABLED } from "@/demo/config";
+import {
+  createDemoUser,
+  deleteDemoUser,
+  deleteDemoUsers,
+  ensureDemoSeed,
+  listDemoUsersAsDeviceUsers,
+  updateDemoUser,
+  type DemoUser,
+} from "@/demo/seed";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { RowSelectionState } from "@tanstack/react-table";
-import { Download, Edit, History, Plus, Trash2, Upload } from "lucide-react";
+import { Download, Edit, FingerprintPattern, History, IdCardLanyard, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { UserFormSheet } from "./~components/user-form-sheet";
 import { UserImportMapperDialog } from "./~components/user-import-mapper-dialog";
 import { UserPunchesSheet } from "./~components/user-punches-sheet";
+import { UserSyncSheet } from "./~components/user-sync-sheet";
 import {
   createDeviceUser,
   deleteDeviceUser,
@@ -34,7 +45,22 @@ interface UsersPageProps {
   connected: boolean;
 }
 
+function demoUserToDeviceUser(user: DemoUser): DeviceUser {
+  return {
+    uid: user.uid,
+    role: user.role,
+    name: user.name,
+    userId: user.userId,
+    cardno: user.cardno,
+    fingerprintCount: user.fingerprintCount,
+    fingerprintIndices: user.fingerprintIndices,
+  };
+}
+
+const DEMO_USERS_QUERY_KEY = ["demo-users"] as const;
+
 export function UsersPage({ connected }: UsersPageProps) {
+  const isDemo = !connected && DEMO_MODE_ENABLED;
   const { sp, patch } = useUsersSearchParams();
   const queryClient = useQueryClient();
   const { trigger: confirm } = useConfirmation();
@@ -50,13 +76,18 @@ export function UsersPage({ connected }: UsersPageProps) {
   const [importFileName, setImportFileName] = useState<string | undefined>();
   const [isImportMapperOpen, setIsImportMapperOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [isSyncSheetOpen, setIsSyncSheetOpen] = useState(false);
 
   const getUserRowId = (user: DeviceUser) => `${user.userId}-${user.uid}`;
 
   const usersQuery = useQuery({
-    queryKey: ["device-users"],
-    queryFn: listDeviceUsers,
-    enabled: connected,
+    queryKey: connected ? ["device-users"] : DEMO_USERS_QUERY_KEY,
+    queryFn: async (): Promise<DeviceUser[]> => {
+      if (connected) return listDeviceUsers();
+      ensureDemoSeed();
+      return listDemoUsersAsDeviceUsers().map(demoUserToDeviceUser);
+    },
+    enabled: connected || isDemo,
   });
 
   const allUsers = usersQuery.data ?? [];
@@ -65,36 +96,79 @@ export function UsersPage({ connected }: UsersPageProps) {
     [allUsers, sp],
   );
 
+  const invalidateUsers = () => {
+    queryClient.invalidateQueries({
+      queryKey: connected ? ["device-users"] : DEMO_USERS_QUERY_KEY,
+    });
+  };
+
   const createMutation = useMutation({
-    mutationFn: (values: UserFormValues) => createDeviceUser(toCreatePayload(values)),
+    mutationFn: (values: UserFormValues) => {
+      const payload = toCreatePayload(values);
+      if (isDemo) {
+        return Promise.resolve(
+          demoUserToDeviceUser(
+            createDemoUser({
+              ...payload,
+              role: Number(payload.role ?? 0),
+            }),
+          ),
+        );
+      }
+      return createDeviceUser(payload);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["device-users"] });
+      invalidateUsers();
       setIsSheetOpen(false);
       setEditingUser(null);
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ userId, values }: { userId: string; values: UserFormValues }) =>
-      updateDeviceUser(userId, toUpdatePayload(values)),
+    mutationFn: ({ userId, values }: { userId: string; values: UserFormValues }) => {
+      const payload = toUpdatePayload(values);
+      if (isDemo) {
+        return Promise.resolve(
+          demoUserToDeviceUser(
+            updateDemoUser(userId, {
+              ...payload,
+              role: Number(payload.role ?? 0),
+            }),
+          ),
+        );
+      }
+      return updateDeviceUser(userId, payload);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["device-users"] });
+      invalidateUsers();
       setIsSheetOpen(false);
       setEditingUser(null);
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteDeviceUser,
+    mutationFn: (userId: string) => {
+      if (isDemo) {
+        deleteDemoUser(userId);
+        return Promise.resolve();
+      }
+      return deleteDeviceUser(userId);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["device-users"] });
+      invalidateUsers();
     },
   });
 
   const bulkDeleteMutation = useMutation({
-    mutationFn: (userIds: string[]) => deleteDeviceUsers(userIds),
+    mutationFn: (userIds: string[]) => {
+      if (isDemo) {
+        deleteDemoUsers(userIds);
+        return Promise.resolve();
+      }
+      return deleteDeviceUsers(userIds);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["device-users"] });
+      invalidateUsers();
       setRowSelection({});
     },
   });
@@ -112,7 +186,7 @@ export function UsersPage({ connected }: UsersPageProps) {
     mutationFn: ({ csv, updateExisting }: { csv: string; updateExisting: boolean }) =>
       importDeviceUsers(csv, updateExisting),
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["device-users"] });
+      invalidateUsers();
       setImportMessage(
         `Import finished — created ${result.created}, updated ${result.updated}, skipped ${result.skipped}, failed ${result.failed}.`,
       );
@@ -171,6 +245,32 @@ export function UsersPage({ connected }: UsersPageProps) {
         accessor: "name",
         title: "Name",
         sortable: true,
+        cell: ({ row }) => {
+          const hasFingerprint = (row.fingerprintCount ?? 0) > 0;
+          const hasCard = row.cardno != null && Number(row.cardno) > 0;
+          const labels = row.fingerprintIndices?.map((index) => index + 1).join(", ");
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              <span>{row.name}</span>
+              {hasFingerprint ? (
+                <span title={labels ? `Finger ${labels} stored` : "Fingerprint stored"}>
+                  <FingerprintPattern
+                    className="h-4 w-4 shrink-0 text-muted-foreground"
+                    aria-label="Fingerprint stored"
+                  />
+                </span>
+              ) : null}
+              {hasCard ? (
+                <span title={`Card ${row.cardno}`}>
+                  <IdCardLanyard
+                    className="h-4 w-4 shrink-0 text-muted-foreground"
+                    aria-label="Card registered"
+                  />
+                </span>
+              ) : null}
+            </span>
+          );
+        },
       },
       {
         accessor: "uid",
@@ -184,28 +284,6 @@ export function UsersPage({ connected }: UsersPageProps) {
         sortable: true,
         cell: ({ row }) => roleLabel(row.role),
       },
-      {
-        accessor: "cardno",
-        title: "Card",
-        sortable: true,
-        cell: ({ row }) => row.cardno ?? "—",
-      },
-      {
-        accessor: "fingerprintCount",
-        title: "Fingerprints",
-        sortable: true,
-        cell: ({ row }) => {
-          const count = row.fingerprintCount ?? 0;
-          if (count === 0) return "—";
-          const labels =
-            row.fingerprintIndices?.map((index) => index + 1).join(", ") ?? String(count);
-          return (
-            <span className="font-mono" title={`Finger ${labels}`}>
-              {count}
-            </span>
-          );
-        },
-      },
     ],
     [],
   );
@@ -214,7 +292,7 @@ export function UsersPage({ connected }: UsersPageProps) {
     getMutationErrorMessage(createMutation.error) ??
     getMutationErrorMessage(updateMutation.error);
 
-  if (!connected) {
+  if (!connected && !isDemo) {
     return (
       <div className="space-y-4 p-4">
         <PageHeader
@@ -233,7 +311,11 @@ export function UsersPage({ connected }: UsersPageProps) {
     <div className="space-y-4 p-4">
       <PageHeader
         title="User management"
-        subtitle={`${allUsers.length} users on device`}
+        subtitle={
+          isDemo
+            ? `${allUsers.length} demo users (localStorage)`
+            : `${allUsers.length} users on device`
+        }
         Action={
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -249,19 +331,29 @@ export function UsersPage({ connected }: UsersPageProps) {
             <Button
               variant="outline"
               disabled={allUsers.length === 0}
+              onClick={() => setIsSyncSheetOpen(true)}
+            >
+              <RefreshCw className="mr-1 h-4 w-4" />
+              Sync users
+            </Button>
+            <Button
+              variant="outline"
+              disabled={allUsers.length === 0}
               onClick={() => exportDeviceUsersCsv(allUsers)}
             >
               <Download className="mr-1 h-4 w-4" />
               Export CSV
             </Button>
-            <Button
-              variant="outline"
-              disabled={importMutation.isPending}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="mr-1 h-4 w-4" />
-              {importMutation.isPending ? "Importing..." : "Import CSV"}
-            </Button>
+            {!isDemo ? (
+              <Button
+                variant="outline"
+                disabled={importMutation.isPending}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="mr-1 h-4 w-4" />
+                {importMutation.isPending ? "Importing..." : "Import CSV"}
+              </Button>
+            ) : null}
             <input
               ref={fileInputRef}
               type="file"
@@ -282,14 +374,26 @@ export function UsersPage({ connected }: UsersPageProps) {
         }
       />
 
-      <div className="flex items-center gap-2">
-        <Checkbox
-          id="update-existing"
-          checked={updateExisting}
-          onCheckedChange={(checked) => setUpdateExisting(checked === true)}
-        />
-        <Label htmlFor="update-existing">Update existing users when importing CSV</Label>
-      </div>
+      {isDemo ? (
+        <Alert>
+          <AlertTitle>Demo mode</AlertTitle>
+          <AlertDescription>
+            Device not connected — editing demo users in localStorage. Connect on the Device tab for
+            the live device. A fingerprint icon beside the name means a template is stored.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
+      {!isDemo ? (
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="update-existing"
+            checked={updateExisting}
+            onCheckedChange={(checked) => setUpdateExisting(checked === true)}
+          />
+          <Label htmlFor="update-existing">Update existing users when importing CSV</Label>
+        </div>
+      ) : null}
 
       {importMessage ? (
         <Alert>
@@ -323,20 +427,22 @@ export function UsersPage({ connected }: UsersPageProps) {
         error={formError}
       />
 
-      <UserImportMapperDialog
-        open={isImportMapperOpen}
-        onOpenChange={(open) => {
-          setIsImportMapperOpen(open);
-          if (!open) {
-            setImportCsv(null);
-            setImportFileName(undefined);
-          }
-        }}
-        csv={importCsv}
-        fileName={importFileName}
-        isImporting={importMutation.isPending}
-        onImport={(csv) => importMutation.mutate({ csv, updateExisting })}
-      />
+      {!isDemo ? (
+        <UserImportMapperDialog
+          open={isImportMapperOpen}
+          onOpenChange={(open) => {
+            setIsImportMapperOpen(open);
+            if (!open) {
+              setImportCsv(null);
+              setImportFileName(undefined);
+            }
+          }}
+          csv={importCsv}
+          fileName={importFileName}
+          isImporting={importMutation.isPending}
+          onImport={(csv) => importMutation.mutate({ csv, updateExisting })}
+        />
+      ) : null}
 
       <UserPunchesSheet
         open={isPunchesSheetOpen}
@@ -345,6 +451,34 @@ export function UsersPage({ connected }: UsersPageProps) {
           if (!open) setPunchesUser(null);
         }}
         user={punchesUser}
+        demoMode={isDemo}
+      />
+
+      <UserSyncSheet
+        open={isSyncSheetOpen}
+        onOpenChange={setIsSyncSheetOpen}
+        users={allUsers}
+        onApplyPortalValues={async (fromUserId, portal) => {
+          const current = allUsers.find((user) => user.userId === fromUserId);
+          if (!current) return;
+          if (isDemo) {
+            updateDemoUser(fromUserId, {
+              userId: portal.userId,
+              name: portal.name,
+              cardno: current.cardno,
+              role: current.role,
+            });
+            invalidateUsers();
+            return;
+          }
+          await updateDeviceUser(fromUserId, {
+            userId: portal.userId,
+            name: portal.name,
+            cardno: current.cardno,
+            role: current.role,
+          });
+          invalidateUsers();
+        }}
       />
 
       <DataTable
@@ -383,7 +517,7 @@ export function UsersPage({ connected }: UsersPageProps) {
         searchValue={sp.search}
         onSearchChange={(term) => patch({ search: term || undefined, page: 1 })}
         searchPlaceholder="Search by user ID, name, or UID..."
-        onRefresh={() => queryClient.invalidateQueries({ queryKey: ["device-users"] })}
+        onRefresh={invalidateUsers}
         emptyMessage="No users found. Try adjusting your search."
         actions={(row) => (
           <div className="flex items-center justify-end gap-2">

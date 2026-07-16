@@ -1,5 +1,5 @@
 import { ClientManager } from "./client-manager.ts";
-import { loadConfig, saveConfig } from "./config-store.ts";
+import { hasSavedConfig, loadConfig, saveConfig } from "./config-store.ts";
 import type { ClientConfig } from "./types.ts";
 import { isValidWebhookUrl, normalizeWebhookUrl } from "./webhook.ts";
 
@@ -251,6 +251,44 @@ const routes: Record<string, Partial<Record<string, RouteHandler>>> = {
     },
   },
 };
+
+/** Auto-connect to the saved device when the app (and sidecar) start. */
+async function autoConnectOnStartup(): Promise<void> {
+  try {
+    if (!(await hasSavedConfig())) {
+      console.log("ZK_AUTO_CONNECT_SKIPPED=no-saved-config");
+      return;
+    }
+    const config = await loadConfig();
+    if (!config.ip?.trim()) {
+      console.log("ZK_AUTO_CONNECT_SKIPPED=no-ip");
+      return;
+    }
+    await manager.connect(config);
+    console.log(`ZK_AUTO_CONNECTED=${config.ip}`);
+
+    if (manager.getStatus().webhook.enabled) {
+      try {
+        const result = await manager.syncAttendances();
+        console.log(
+          `ZK_AUTO_SYNC_ATTENDANCE=ok total=${result.total} sent=${result.sent} failed=${result.failed}`,
+        );
+      } catch (err) {
+        console.error(
+          `ZK_AUTO_SYNC_ATTENDANCE_FAILED=${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    } else {
+      console.log("ZK_AUTO_SYNC_ATTENDANCE_SKIPPED=no-webhook");
+    }
+  } catch (err) {
+    console.error(
+      `ZK_AUTO_CONNECT_FAILED=${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+}
+
+void autoConnectOnStartup();
 
 const server = Bun.serve({
   hostname,

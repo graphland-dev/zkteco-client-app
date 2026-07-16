@@ -51,9 +51,9 @@ export function FormFieldInput<
       name={name}
       render={({ field }) => (
         <FormItem className={className}>
-          <FormLabel>
+          <FormLabel className="inline-flex flex-row flex-nowrap items-center gap-1">
             {label}
-            {required ? <span className="text-destructive ml-1">*</span> : null}
+            {required ? <span className="text-destructive">*</span> : null}
           </FormLabel>
           <FormControl>
             <div className="relative">

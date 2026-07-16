@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { deleteDemoUserPunch, listDemoUserPunches } from "@/demo/seed";
 import { useConfirmation } from "@/hooks/use-confirm";
 import { formatDatePattern } from "@/lib/date-format";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,12 +28,14 @@ interface UserPunchesSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user: DeviceUser | null;
+  demoMode?: boolean;
 }
 
 export function UserPunchesSheet({
   open,
   onOpenChange,
   user,
+  demoMode = false,
 }: UserPunchesSheetProps) {
   const queryClient = useQueryClient();
   const { trigger: confirm } = useConfirmation();
@@ -50,16 +53,27 @@ export function UserPunchesSheet({
   }, [open, user?.userId]);
 
   const punchesQuery = useQuery({
-    queryKey: ["device-user-punches", user?.userId],
-    queryFn: () => fetchUserPunchHistory(user!.userId),
+    queryKey: [demoMode ? "demo-user-punches" : "device-user-punches", user?.userId],
+    queryFn: async (): Promise<PunchRecord[]> => {
+      if (demoMode) {
+        return listDemoUserPunches(user!.userId);
+      }
+      return fetchUserPunchHistory(user!.userId);
+    },
     enabled: open && Boolean(user),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteUserPunch,
+    mutationFn: (record: PunchRecord) => {
+      if (demoMode) {
+        deleteDemoUserPunch(String(record.deviceUserId), record.recordTime);
+        return Promise.resolve();
+      }
+      return deleteUserPunch(record);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["device-user-punches", user?.userId],
+        queryKey: [demoMode ? "demo-user-punches" : "device-user-punches", user?.userId],
       });
     },
   });
@@ -93,7 +107,7 @@ export function UserPunchesSheet({
       },
       {
         accessor: "statusLabel",
-        title: "Verify",
+        title: demoMode ? "Device" : "Verify",
         sortable: true,
         cell: ({ row }) => row.statusLabel ?? "—",
       },
@@ -105,7 +119,7 @@ export function UserPunchesSheet({
           row.userSn !== undefined ? String(row.userSn) : "—",
       },
     ],
-    [],
+    [demoMode],
   );
 
   const handleDelete = (record: PunchRecord) => {
@@ -115,7 +129,9 @@ export function UserPunchesSheet({
     );
     confirm({
       title: "Delete punch",
-      description: `Remove the punch at ${timeLabel} from the device? Other users' attendance records are preserved.`,
+      description: demoMode
+        ? `Remove the demo punch at ${timeLabel} from localStorage?`
+        : `Remove the punch at ${timeLabel} from the device? Other users' attendance records are preserved.`,
       confirmText: "Delete punch",
       onConfirm: () => deleteMutation.mutate(record),
     });
@@ -125,20 +141,22 @@ export function UserPunchesSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="flex flex-col gap-4 overflow-hidden p-4 w-full max-w-2xl"
+        className="flex h-full w-full flex-col gap-4 overflow-hidden p-4 data-[side=right]:sm:max-w-3xl"
       >
         <SheetHeader className="p-0">
           <SheetTitle>Punch history{user ? ` — ${user.name}` : ""}</SheetTitle>
           <SheetDescription>
             {user
-              ? `Attendance records for user ${user.userId} from the connected device.`
+              ? demoMode
+                ? `Demo attendance records for user ${user.userId} from localStorage.`
+                : `Attendance records for user ${user.userId} from the connected device.`
               : "Select a user to view punch history."}
           </SheetDescription>
         </SheetHeader>
 
         {punchesQuery.isLoading ? (
           <p className="text-sm text-muted-foreground">
-            Downloading attendance from device…
+            {demoMode ? "Loading demo punches…" : "Downloading attendance from device…"}
           </p>
         ) : null}
 

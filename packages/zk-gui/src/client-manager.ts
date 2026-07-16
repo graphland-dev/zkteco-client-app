@@ -20,7 +20,7 @@ import {
 } from "./user-csv.ts";
 import { isValidWebhookUrl, normalizeWebhookSecret, normalizeWebhookUrl, sendWebhookBatch, toAttendanceWebhookItem, toPassWebhookItem } from "./webhook.ts";
 
-const MAX_RECENT_PASSES = 10;
+const MAX_RECENT_PASSES = 50;
 
 function serializePunchRecord(record: AttendanceRecord): PunchRecord {
   return {
@@ -58,6 +58,7 @@ export class ClientManager {
   private activeConfig: ClientConfig | null = null;
   private deviceInfo: ConnectionStatus["deviceInfo"] = null;
   private lastError: string | null = null;
+  private connecting = false;
   private webhookUrl: string | null = null;
   private webhookSecret: string | null = null;
   private webhookListening = false;
@@ -96,6 +97,7 @@ export class ClientManager {
   getStatus(): ConnectionStatus {
     return {
       connected: this.client?.isConnected ?? false,
+      connecting: this.connecting,
       connectionType: this.client?.connectionType ?? null,
       deviceInfo: this.deviceInfo,
       lastError: this.lastError,
@@ -178,6 +180,7 @@ export class ClientManager {
         attTime,
         delivered: true,
         deliveredAt: this.webhookLastDeliveredAt,
+        deviceIp,
       });
     } catch (err) {
       const message = formatError(err);
@@ -187,6 +190,7 @@ export class ClientManager {
         attTime,
         delivered: false,
         error: message,
+        deviceIp,
       });
     }
   }
@@ -205,6 +209,7 @@ export class ClientManager {
   async connect(config: ClientConfig): Promise<ConnectionStatus> {
     await this.disconnect();
     this.lastError = null;
+    this.connecting = true;
     this.setWebhookFromConfig(config);
 
     const client = new ZKTecoClient(toClientOptions(config));
@@ -232,6 +237,8 @@ export class ClientManager {
         // ignore
       }
       throw new Error(this.lastError);
+    } finally {
+      this.connecting = false;
     }
   }
 
@@ -325,6 +332,17 @@ export class ClientManager {
 
       const items = records.map((record) => toAttendanceWebhookItem(record, deviceIp));
 
+      // Newest first for the on-screen attendance log.
+      const recentFromSync = [...records]
+        .sort((a, b) => b.recordTime.getTime() - a.recordTime.getTime())
+        .slice(0, MAX_RECENT_PASSES)
+        .map((record) => ({
+          userId: record.deviceUserId,
+          attTime: record.recordTime.toISOString(),
+          delivered: false as boolean,
+          deviceIp,
+        }));
+
       try {
         await sendWebhookBatch(url, items, { secret: this.webhookSecret ?? undefined });
         this.sync = {
@@ -333,6 +351,15 @@ export class ClientManager {
           failed: 0,
           lastError: null,
         };
+        const deliveredAt = new Date().toISOString();
+        this.webhookLastDeliveredAt = deliveredAt;
+        this.webhookPassesForwarded += items.length;
+        this.webhookLastPassAt = recentFromSync[0]?.attTime ?? this.webhookLastPassAt;
+        this.recentPasses = recentFromSync.map((pass) => ({
+          ...pass,
+          delivered: true,
+          deliveredAt,
+        }));
       } catch (err) {
         const message = formatError(err);
         errors.push(message);
@@ -342,6 +369,12 @@ export class ClientManager {
           failed: items.length,
           lastError: message,
         };
+        this.webhookLastError = message;
+        this.recentPasses = recentFromSync.map((pass) => ({
+          ...pass,
+          delivered: false,
+          error: message,
+        }));
       }
 
       return {
@@ -406,8 +439,9 @@ export class ClientManager {
     return this.requireClient().createUser(payload);
   }
 
-  async updateUser(userId: string, input: Omit<UserWriteInput, "userId">) {
+  async updateUser(userId: string, input: UserWriteInput | Omit<UserWriteInput, "userId">) {
     const payload: UpdateUserInput = {
+      userId: "userId" in input && input.userId ? input.userId.trim() : undefined,
       name: input.name?.trim(),
       password: input.password,
       cardno: input.cardno,

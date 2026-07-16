@@ -396,7 +396,7 @@ export class ZKTecoClient {
       const payload = encodeUser(
         {
           uid: existing.uid,
-          userId: existing.userId,
+          userId: input.userId?.trim() || existing.userId,
           name: input.name ?? existing.name,
           password: input.password ?? existing.password,
           role: input.role ?? existing.role,
@@ -411,6 +411,7 @@ export class ZKTecoClient {
 
       return {
         ...existing,
+        userId: input.userId?.trim() || existing.userId,
         name: input.name ?? existing.name,
         password: input.password ?? existing.password,
         role: typeof input.role === "number" ? input.role : existing.role,

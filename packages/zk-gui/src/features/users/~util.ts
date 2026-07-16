@@ -59,9 +59,10 @@ export function toCreatePayload(values: UserFormValues): UserWriteInput {
   };
 }
 
-export function toUpdatePayload(values: UserFormValues): Omit<UserWriteInput, "userId"> {
+export function toUpdatePayload(values: UserFormValues): UserWriteInput {
   const cardno = values.cardno?.trim();
   return {
+    userId: values.userId.trim(),
     name: values.name.trim(),
     password: values.password?.trim() || undefined,
     cardno: cardno ? Number(cardno) : undefined,
@@ -80,7 +81,7 @@ export async function createDeviceUser(input: UserWriteInput): Promise<DeviceUse
 
 export async function updateDeviceUser(
   userId: string,
-  input: Omit<UserWriteInput, "userId">,
+  input: UserWriteInput | Omit<UserWriteInput, "userId">,
 ): Promise<DeviceUser> {
   return apiUpdateUser(userId, input);
 }

@@ -42,6 +42,8 @@ export interface CreateUsersResult {
 }
 
 export interface UpdateUserInput {
+  /** When set, renames the device user id while keeping the same uid. */
+  userId?: string;
   name?: string;
   password?: string;
   role?: UserRole;

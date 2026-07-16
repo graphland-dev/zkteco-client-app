@@ -4,6 +4,14 @@ import {
   saveStartupSettings,
   type StartupSettings,
 } from "@/startup-settings";
+import { DEMO_MODE_ENABLED } from "@/demo/config";
+import {
+  clearDemoData,
+  ensureDemoSeed,
+  loadAttendanceLog,
+  simulateAttendancePunch,
+} from "@/demo/seed";
+import { Button } from "@/components/ui/button";
 
 const DEFAULT_STARTUP_SETTINGS: StartupSettings = {
   launchOnStartup: true,
@@ -12,11 +20,17 @@ const DEFAULT_STARTUP_SETTINGS: StartupSettings = {
 
 type SaveState = "idle" | "saving" | "saved" | "error";
 
+function notifyAttendanceUpdated() {
+  window.dispatchEvent(new Event("gl-zkt-attendance-updated"));
+}
+
 export function SettingsPage() {
   const [settings, setSettings] = useState<StartupSettings>(DEFAULT_STARTUP_SETTINGS);
   const [ready, setReady] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
+  const [passCount, setPassCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +54,17 @@ export function SettingsPage() {
     };
   }, []);
 
+  // Seed demo data into localStorage only when Settings is opened (and demo mode is on).
+  useEffect(() => {
+    if (!ready || !DEMO_MODE_ENABLED) return;
+    const wrote = ensureDemoSeed();
+    setPassCount(loadAttendanceLog().length);
+    if (wrote) {
+      setDemoMessage("Demo seed written to localStorage (users + previous punches from all machines).");
+      notifyAttendanceUpdated();
+    }
+  }, [ready]);
+
   async function updateSetting<K extends keyof StartupSettings>(
     key: K,
     value: StartupSettings[K],
@@ -57,6 +82,23 @@ export function SettingsPage() {
       setError(err instanceof Error ? err.message : String(err));
       setSaveState("error");
     }
+  }
+
+  function handleSimulate() {
+    ensureDemoSeed();
+    const pass = simulateAttendancePunch();
+    setPassCount(loadAttendanceLog().length);
+    setDemoMessage(
+      `Simulated punch: ${pass.userName ?? pass.userId} @ ${pass.deviceIp} (${new Date(pass.attTime).toLocaleTimeString()})`,
+    );
+    notifyAttendanceUpdated();
+  }
+
+  function handleClearDemo() {
+    clearDemoData();
+    setPassCount(0);
+    setDemoMessage("Demo seed and attendance log cleared from localStorage.");
+    notifyAttendanceUpdated();
   }
 
   if (!ready) {
@@ -113,12 +155,39 @@ export function SettingsPage() {
 
         <p className="field-hint">
           Closing the window keeps the app running in the tray. Choose <strong>Quit</strong> from
-          the tray menu to fully exit.
+          the tray menu to fully exit. The app also auto-connects to the saved device IP on startup.
         </p>
 
         {saveState === "saved" ? <p className="success-text">Startup settings saved.</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
       </section>
+
+      {DEMO_MODE_ENABLED ? (
+        <section className="panel">
+          <div className="panel-header">
+            <h2>Demo / seed data</h2>
+            <p>
+              Seed data is written to localStorage when you open Settings. Turn off via{" "}
+              <code>DEMO_MODE_ENABLED</code> in <code>src/demo/config.ts</code>.
+            </p>
+          </div>
+
+          <p className="field-hint">
+            Stored punches: <strong>{passCount}</strong>
+          </p>
+
+          <div className="button-row">
+            <Button type="button" onClick={handleSimulate}>
+              Simulate attendance
+            </Button>
+            <Button type="button" variant="outline" onClick={handleClearDemo}>
+              Clear demo data
+            </Button>
+          </div>
+
+          {demoMessage ? <p className="success-text">{demoMessage}</p> : null}
+        </section>
+      ) : null}
     </main>
   );
 }

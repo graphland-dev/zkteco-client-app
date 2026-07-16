@@ -21,6 +21,14 @@ export const DEFAULT_CONFIG: ClientConfig = {
   webhookSecret: "",
 };
 
+export async function hasSavedConfig(): Promise<boolean> {
+  try {
+    return await Bun.file(configPath()).exists();
+  } catch {
+    return false;
+  }
+}
+
 export async function loadConfig(): Promise<ClientConfig> {
   try {
     const file = Bun.file(configPath());

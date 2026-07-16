@@ -147,12 +147,12 @@ h2 {
   gap: 14px;
 }
 
-label {
+.config-form label {
   display: grid;
   gap: 6px;
 }
 
-label span {
+.config-form label span {
   font-size: 0.92rem;
   color: #47607a;
 }
@@ -163,7 +163,7 @@ label span {
   color: #68839f;
 }
 
-input {
+.config-form input {
   width: 100%;
   border: 1px solid #c8d5e4;
   border-radius: 10px;
@@ -172,7 +172,7 @@ input {
   color: inherit;
 }
 
-input:focus {
+.config-form input:focus {
   outline: 2px solid rgba(47, 111, 237, 0.25);
   border-color: #2f6fed;
 }
@@ -190,7 +190,8 @@ input:focus {
   margin-top: 2px;
 }
 
-button {
+/* Legacy device-tab buttons only — do not override shadcn/Base UI controls (select, etc.). */
+button:not([data-slot]) {
   border: 0;
   border-radius: 10px;
   padding: 10px 14px;
@@ -198,12 +199,12 @@ button {
   transition: transform 120ms ease, opacity 120ms ease;
 }
 
-button:disabled {
+button:not([data-slot]):disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-button:not(:disabled):active {
+button:not([data-slot]):not(:disabled):active {
   transform: translateY(1px);
 }
 

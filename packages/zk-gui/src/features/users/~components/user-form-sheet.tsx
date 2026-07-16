@@ -1,11 +1,14 @@
-import { FormErrorAlert, FormFieldInput } from "@/components/form";
+import { FormErrorAlert, FormFieldInput, RequiredAsterisk } from "@/components/form";
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Sheet,
@@ -15,9 +18,8 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import {
   USER_ROLE_OPTIONS,
@@ -46,6 +48,7 @@ export function UserFormSheet({
   error,
 }: UserFormSheetProps) {
   const isEditMode = !!user;
+  const [allowUserIdEdit, setAllowUserIdEdit] = useState(false);
 
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
@@ -55,14 +58,18 @@ export function UserFormSheet({
   useEffect(() => {
     if (open) {
       form.reset(toUserFormValues(user));
+      setAllowUserIdEdit(false);
     } else {
       form.reset();
+      setAllowUserIdEdit(false);
     }
   }, [open, user, form]);
 
+  const userIdLocked = isEditMode && !allowUserIdEdit;
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="flex flex-col gap-4 overflow-y-auto p-4 sm:max-w-lg">
+      <SheetContent side="right" className="flex flex-col gap-4 overflow-y-auto p-4 sm:max-w-lg data-[side=right]:sm:max-w-lg">
         <SheetHeader className="p-0">
           <SheetTitle>{isEditMode ? `Edit user ${user?.userId}` : "Create user"}</SheetTitle>
           <SheetDescription>
@@ -82,8 +89,21 @@ export function UserFormSheet({
               label="User ID"
               placeholder="5011"
               required
-              disabled={isEditMode}
+              disabled={userIdLocked}
             />
+
+            {isEditMode ? (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="allow-user-id-edit"
+                  checked={allowUserIdEdit}
+                  onCheckedChange={(checked) => setAllowUserIdEdit(checked === true)}
+                />
+                <Label htmlFor="allow-user-id-edit" className="font-normal">
+                  Allow editing User ID
+                </Label>
+              </div>
+            ) : null}
 
             <FormFieldInput
               control={form.control}
@@ -112,23 +132,22 @@ export function UserFormSheet({
               name="role"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    Role <span className="text-destructive">*</span>
+                  <FormLabel className="inline-flex flex-row flex-nowrap items-center gap-1">
+                    Role
+                    <RequiredAsterisk />
                   </FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <span
-                          className={cn(
-                            "truncate",
-                            !field.value && "text-muted-foreground",
-                          )}
-                        >
-                          {field.value ? roleLabel(Number(field.value)) : "Select role"}
-                        </span>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
+                  <Select
+                    value={field.value}
+                    onValueChange={(value) => {
+                      if (value != null) field.onChange(String(value));
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select role">
+                        {(value) => (value != null && value !== "" ? roleLabel(Number(value)) : null)}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent alignItemWithTrigger={false} align="start">
                       {USER_ROLE_OPTIONS.map((option) => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}

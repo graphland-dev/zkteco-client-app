@@ -20,6 +20,7 @@ export interface WebhookPassRecord {
   delivered: boolean;
   deliveredAt?: string;
   error?: string;
+  deviceIp?: string;
 }
 
 export interface WebhookStatus {
@@ -35,6 +36,7 @@ export interface WebhookStatus {
 
 export interface ConnectionStatus {
   connected: boolean;
+  connecting?: boolean;
   connectionType: ConnectionType | null;
   deviceInfo: DeviceInfo | null;
   lastError: string | null;

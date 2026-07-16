@@ -103,7 +103,7 @@ export async function createUser(input: UserWriteInput): Promise<DeviceUser> {
 
 export async function updateUser(
   userId: string,
-  input: Omit<UserWriteInput, "userId">,
+  input: UserWriteInput | Omit<UserWriteInput, "userId">,
 ): Promise<DeviceUser> {
   return request<DeviceUser>("/api/users", {
     method: "PATCH",
