@@ -14,3 +14,5 @@ packages/zk-gui/src-tauri/src-tauri/
 # Compiled sidecar binaries (built by scripts/build-sidecar.ts)
 packages/zk-gui/src-tauri/binaries/*
 !packages/zk-gui/src-tauri/binaries/.gitkeep
+
+node_modules

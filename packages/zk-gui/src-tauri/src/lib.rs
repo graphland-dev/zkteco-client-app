@@ -1,3 +1,5 @@
+mod startup;
+
 use std::path::PathBuf;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -5,6 +7,9 @@ use std::time::Duration;
 use tauri::{Manager, State};
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
+
+#[cfg(target_os = "macos")]
+use tauri_plugin_autostart::MacosLauncher;
 
 struct AppState {
   api_url: Mutex<Option<String>>,
@@ -79,7 +84,14 @@ async fn spawn_sidecar(
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+  let mut autostart = tauri_plugin_autostart::Builder::new().args([startup::AUTOSTART_ARG]);
+  #[cfg(target_os = "macos")]
+  {
+    autostart = autostart.macos_launcher(MacosLauncher::LaunchAgent);
+  }
+
   tauri::Builder::default()
+    .plugin(autostart.build())
     .plugin(tauri_plugin_shell::init())
     .manage(AppState {
       api_url: Mutex::new(None),
@@ -115,9 +127,15 @@ pub fn run() {
       })
       .map_err(|err| Box::<dyn std::error::Error>::from(err))?;
 
+      startup::init(app.handle())?;
+
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![get_api_url])
+    .invoke_handler(tauri::generate_handler![
+      get_api_url,
+      startup::get_startup_settings,
+      startup::set_startup_settings,
+    ])
     .build(tauri::generate_context!())
     .expect("error while building tauri application")
     .run(|app, event| {

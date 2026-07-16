@@ -89,7 +89,7 @@ export function UserPunchesSheet({
         title: "Punch",
         sortable: true,
         cell: ({ row }) =>
-          row.punchLabel ?? (row.punch !== undefined ? String(row.punch) : "—"),
+          row.punch !== undefined || row.punchLabel ? "Punched" : "—",
       },
       {
         accessor: "statusLabel",
@@ -115,7 +115,7 @@ export function UserPunchesSheet({
     );
     confirm({
       title: "Delete punch",
-      description: `Remove the ${record.punchLabel ?? "punch"} at ${timeLabel} from the device? Other users' attendance records are preserved.`,
+      description: `Remove the punch at ${timeLabel} from the device? Other users' attendance records are preserved.`,
       confirmText: "Delete punch",
       onConfirm: () => deleteMutation.mutate(record),
     });

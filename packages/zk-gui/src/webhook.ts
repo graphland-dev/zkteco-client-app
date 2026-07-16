@@ -1,6 +1,9 @@
-import { getPunchLabel, getVerifyModeLabel } from "@graphland/zkteco";
+import { getVerifyModeLabel } from "@graphland/zkteco";
 import type { AttendanceRecord, RealTimeLog } from "@graphland/zkteco";
 import type { WebhookAttendanceItem, WebhookBody } from "./types.ts";
+
+/** This app treats every device event as a punch; check-in/out is decided by the backend. */
+const APP_PUNCH_LABEL = "punched";
 
 export async function sendWebhookBatch(
   url: string,
@@ -50,7 +53,7 @@ export function toWebhookItem(input: {
 
   if (input.punch !== undefined) {
     item.punch = input.punch;
-    item.punchLabel = getPunchLabel(input.punch);
+    item.punchLabel = APP_PUNCH_LABEL;
   }
   if (input.status !== undefined) {
     item.status = input.status;

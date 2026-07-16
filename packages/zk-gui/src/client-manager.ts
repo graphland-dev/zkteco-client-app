@@ -28,7 +28,8 @@ function serializePunchRecord(record: AttendanceRecord): PunchRecord {
     deviceUserId: record.deviceUserId,
     recordTime: record.recordTime.toISOString(),
     punch: record.punch,
-    punchLabel: record.punchLabel,
+    // Check-in/out is decided by the backend; this app only shows punches.
+    punchLabel: record.punch !== undefined ? "punched" : record.punchLabel,
     status: record.status,
     statusLabel: record.statusLabel,
   };

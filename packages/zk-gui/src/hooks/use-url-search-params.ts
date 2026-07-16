@@ -63,11 +63,11 @@ export function useUsersSearchParams() {
   return useMemo(() => ({ sp, navigate, patch }), [sp, navigate, patch]);
 }
 
-export type AppTab = "device" | "users" | "attendance";
+export type AppTab = "device" | "users" | "attendance" | "settings";
 
 function parseAppTab(search: string): AppTab {
   const value = new URLSearchParams(search).get("tab");
-  if (value === "users" || value === "attendance") return value;
+  if (value === "users" || value === "attendance" || value === "settings") return value;
   return "device";
 }
 

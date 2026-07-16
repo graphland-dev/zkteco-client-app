@@ -13,8 +13,10 @@ import {
 import type { ClientConfig, ConnectionStatus, SyncAttendanceResult, TestConnectionResult } from "./types";
 import { UsersPage } from "@/features/users";
 import { AttendanceLogPage } from "@/features/attendance-log";
+import { SettingsPage } from "@/features/settings";
 import { useAppTab } from "@/hooks/use-url-search-params";
 import { useConfirmation } from "@/hooks/use-confirm";
+import { BROWSER_ONLY_MESSAGE, isTauriRuntime } from "@/tauri-runtime";
 import "./styles.css";
 
 const EMPTY_CONFIG: ClientConfig = {
@@ -162,6 +164,17 @@ export function App() {
     }
   }
 
+  if (!isTauriRuntime()) {
+    return (
+      <div className="app-shell">
+        <div className="loading-card">
+          <h1>Open the desktop app</h1>
+          <p>{BROWSER_ONLY_MESSAGE}</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!ready) {
     return (
       <div className="app-shell">
@@ -209,6 +222,13 @@ export function App() {
           onClick={() => setActiveTab("attendance")}
         >
           Attendance
+        </button>
+        <button
+          type="button"
+          className={activeTab === "settings" ? "tab active" : "tab"}
+          onClick={() => setActiveTab("settings")}
+        >
+          Settings
         </button>
       </nav>
 
@@ -535,6 +555,8 @@ export function App() {
       </main>
       ) : activeTab === "users" ? (
         <UsersPage connected={status.connected} />
+      ) : activeTab === "settings" ? (
+        <SettingsPage />
       ) : (
         <AttendanceLogPage connected={status.connected} />
       )}

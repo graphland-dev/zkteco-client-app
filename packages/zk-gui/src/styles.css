@@ -125,6 +125,9 @@ h2 {
 }
 
 .panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   background: rgba(255, 255, 255, 0.88);
   border: 1px solid rgba(16, 32, 51, 0.08);
   border-radius: 18px;
@@ -134,7 +137,7 @@ h2 {
 }
 
 .panel-header {
-  margin-bottom: 18px;
+  margin-bottom: 0;
 }
 
 .config-form,
@@ -184,6 +187,7 @@ input:focus {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-top: 2px;
 }
 
 button {
@@ -421,6 +425,48 @@ button:not(:disabled):active {
   background: #17324d;
   border-color: #17324d;
   color: #fff;
+}
+
+.settings-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.settings-list {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid #d7e2ef;
+  border-radius: 12px;
+  background: #fbfdff;
+  cursor: pointer;
+}
+
+.settings-toggle.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.settings-toggle-label {
+  display: block;
+  font-weight: 600;
+  color: #17324d;
+  margin-bottom: 4px;
+}
+
+.settings-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  accent-color: #17324d;
 }
 
 .users-panel {
