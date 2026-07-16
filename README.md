@@ -11,10 +11,10 @@ Grab the installer for your platform from the [latest release](https://github.co
 
 | Platform | Installer |
 |----------|-----------|
-| macOS (Apple Silicon) | [Graphland.ZKT.Client_0.1.0_aarch64.dmg](https://github.com/graphland-dev/zk-client-app/releases/download/v0.1.0/Graphland.ZKT.Client_0.1.0_aarch64.dmg) |
-| macOS (Intel) | [Graphland.ZKT.Client_0.1.0_x64.dmg](https://github.com/graphland-dev/zk-client-app/releases/download/v0.1.0/Graphland.ZKT.Client_0.1.0_x64.dmg) |
-| Windows (installer) | [Graphland.ZKT.Client_0.1.0_x64-setup.exe](https://github.com/graphland-dev/zk-client-app/releases/download/v0.1.0/Graphland.ZKT.Client_0.1.0_x64-setup.exe) |
-| Windows (MSI) | [Graphland.ZKT.Client_0.1.0_x64_en-US.msi](https://github.com/graphland-dev/zk-client-app/releases/download/v0.1.0/Graphland.ZKT.Client_0.1.0_x64_en-US.msi) |
+| macOS (Apple Silicon) | [Graphland.ZKT.Client_0.2.0_aarch64.dmg](https://github.com/graphland-dev/zk-client-app/releases/download/v0.2.0/Graphland.ZKT.Client_0.2.0_aarch64.dmg) |
+| macOS (Intel) | [Graphland.ZKT.Client_0.2.0_x64.dmg](https://github.com/graphland-dev/zk-client-app/releases/download/v0.2.0/Graphland.ZKT.Client_0.2.0_x64.dmg) |
+| Windows (installer) | [Graphland.ZKT.Client_0.2.0_x64-setup.exe](https://github.com/graphland-dev/zk-client-app/releases/download/v0.2.0/Graphland.ZKT.Client_0.2.0_x64-setup.exe) |
+| Windows (MSI) | [Graphland.ZKT.Client_0.2.0_x64_en-US.msi](https://github.com/graphland-dev/zk-client-app/releases/download/v0.2.0/Graphland.ZKT.Client_0.2.0_x64_en-US.msi) |
 
 > **Note:** builds are currently unsigned.
 > On **macOS**, right-click the app → **Open** the first time (or allow it under System Settings → Privacy & Security) to get past Gatekeeper.
