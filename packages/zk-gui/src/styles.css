@@ -429,7 +429,19 @@ button:not([data-slot]):not(:disabled):active {
 }
 
 .settings-layout {
+  position: relative;
   grid-template-columns: minmax(0, 1fr);
+  padding-bottom: 2.5rem;
+}
+
+.settings-version {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  margin: 0;
+  font-size: 0.8rem;
+  color: #68839f;
+  font-variant-numeric: tabular-nums;
 }
 
 .settings-list {

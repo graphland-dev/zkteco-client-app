@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getVersion } from "@tauri-apps/api/app";
 import {
   getStartupSettings,
   saveStartupSettings,
@@ -12,6 +13,7 @@ import {
   simulateAttendancePunch,
 } from "@/demo/seed";
 import { Button } from "@/components/ui/button";
+import { isTauriRuntime } from "@/tauri-runtime";
 
 const DEFAULT_STARTUP_SETTINGS: StartupSettings = {
   launchOnStartup: true,
@@ -31,6 +33,7 @@ export function SettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [demoMessage, setDemoMessage] = useState<string | null>(null);
   const [passCount, setPassCount] = useState(0);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +52,21 @@ export function SettingsPage() {
         }
       });
 
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isTauriRuntime()) return;
+    let cancelled = false;
+    getVersion()
+      .then((version) => {
+        if (!cancelled) setAppVersion(version);
+      })
+      .catch(() => {
+        if (!cancelled) setAppVersion(null);
+      });
     return () => {
       cancelled = true;
     };
@@ -187,6 +205,12 @@ export function SettingsPage() {
 
           {demoMessage ? <p className="success-text">{demoMessage}</p> : null}
         </section>
+      ) : null}
+
+      {appVersion ? (
+        <p className="settings-version" aria-label="App version">
+          Version {appVersion}
+        </p>
       ) : null}
     </main>
   );
